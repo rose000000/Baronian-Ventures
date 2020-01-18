@@ -61,6 +61,7 @@ static lighttable_t **walllights;
 static INT16 *maskedtexturecol;
 #ifdef ESLOPE
 static fixed_t *maskedtextureheight = NULL;
+static fixed_t *thicksidefrac = NULL;
 #endif
 
 // R_ExpandPlaneY
@@ -250,6 +251,8 @@ static void R_RenderSegLoop (void)
 			rw.midtextureback   += FixedMul(rw.midtexturebackslide, oldtexturecolumn-texturecolumn);
 		}
 		oldtexturecolumn = texturecolumn;
+		if (thicksidefrac != NULL)
+			thicksidefrac[rw.x] = texturecolumn;
 #endif
 
 		texturecolumn >>= FRACBITS;
@@ -703,6 +706,7 @@ static void R_SegTextured(fixed_t hyp, boolean longboi)
 static void R_CheckMaskedTextures(void)
 {
 	INT32 i = 0;
+
 	// allocate space for masked texture tables
 	if (frontsector && backsector && frontsector->tag != backsector->tag && (backsector->ffloors || frontsector->ffloors))
 	{
@@ -727,6 +731,7 @@ static void R_CheckMaskedTextures(void)
 #ifdef ESLOPE
 		lowcutslope = max(worldbottomslope, worldlowslope) + viewz;
 		highcutslope = min(worldtopslope, worldhighslope) + viewz;
+		thicksidefrac = ds_p->thicksidefrac;
 #endif
 
 		if (frontsector->ffloors && backsector->ffloors)
@@ -1954,6 +1959,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 #ifdef ESLOPE
 	maskedtextureheight = NULL;
+	thicksidefrac = NULL;
 	//initialize segleft and segright
 	memset(&segleft, 0x00, sizeof(segleft));
 	memset(&segright, 0x00, sizeof(segright));
@@ -2917,7 +2923,12 @@ static void R_RenderThickSegLoop(void)
 #ifdef ESLOPE
 			if (rw.ffloortextureslide) { // skew FOF walls
 				if (oldx != -1)
-					dc_texturemid += FixedMul(rw.ffloortextureslide, (maskedtexturecol[oldx]-maskedtexturecol[dc_x])<<FRACBITS);
+				{
+					fixed_t thickfrac = (maskedtexturecol[oldx]-maskedtexturecol[dc_x])<<FRACBITS;
+					if (thicksidefrac != NULL)
+						thickfrac = (thicksidefrac[oldx]-thicksidefrac[dc_x]);
+					dc_texturemid += FixedMul(rw.ffloortextureslide, thickfrac);
+				}
 				oldx = dc_x;
 			}
 #endif
@@ -3285,9 +3296,9 @@ static void R_ThickStepping(drawseg_t *ds, INT32 range)
 		right_bottom = *pfloor->bottomheight - viewz;
 
 	// using INT64 to avoid 32bit overflow
-	rw.top_frac =    (INT64)centeryfrac - (((INT64)rw.left_top     * ds->scale1) >> FRACBITS);
+	rw.top_frac    = (INT64)centeryfrac - (((INT64)rw.left_top     * ds->scale1) >> FRACBITS);
 	rw.bottom_frac = (INT64)centeryfrac - (((INT64)rw.left_bottom  * ds->scale1) >> FRACBITS);
-	rw.top_step =    (INT64)centeryfrac - (((INT64)right_top       * ds->scale2) >> FRACBITS);
+	rw.top_step    = (INT64)centeryfrac - (((INT64)right_top       * ds->scale2) >> FRACBITS);
 	rw.bottom_step = (INT64)centeryfrac - (((INT64)right_bottom    * ds->scale2) >> FRACBITS);
 
 	rw.top_step = (rw.top_step-rw.top_frac)/(range);
@@ -3451,7 +3462,10 @@ void R_RenderThickSideRange(drawseg_t *ds, INT32 x1, INT32 x2, ffloor_t *pfloor)
 		angle_t lineangle = R_PointToAngle2(curline->v1->x, curline->v1->y, curline->v2->x, curline->v2->y);
 
 		if (skewslope)
+		{
 			rw.ffloortextureslide = FixedMul(skewslope->zdelta, FINECOSINE((lineangle-skewslope->xydirection)>>ANGLETOFINESHIFT));
+			thicksidefrac = ds->thicksidefrac;
+		}
 	}
 #endif
 
