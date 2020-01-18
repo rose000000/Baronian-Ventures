@@ -1463,6 +1463,13 @@ void P_PlayLivesJingle(player_t *player)
 		S_StartSound(NULL, sfx_oneup);
 	else if (mariomode)
 		S_StartSound(NULL, sfx_marioa);
+	else if (cv_1upsound.value)
+	{
+		if (S_sfx[sfx_oneup].lumpnum != LUMPERROR)
+			S_StartSound(NULL, sfx_oneup);
+		else
+			S_StartSound(NULL, sfx_chchng);/* at least play something! */
+	}
 	else
 	{
 		P_PlayJingle(player, JT_1UP);
@@ -8648,7 +8655,7 @@ static void P_MovePlayer(player_t *player)
 	}
 
 #ifdef HWRENDER
-	if (rendermode != render_soft && rendermode != render_none && cv_grfovchange.value)
+	if (rendermode != render_soft && rendermode != render_none && cv_fovchange.value)
 	{
 		fixed_t speed;
 		const fixed_t runnyspeed = 20*FRACUNIT;
@@ -9884,13 +9891,6 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	{
 		dist = camdist;
 
-		// x1.5 dist for splitscreen
-		if (splitscreen)
-		{
-			dist = FixedMul(dist, 3*FRACUNIT/2);
-			camheight = FixedMul(camheight, 3*FRACUNIT/2);
-		}
-
 		if (sign) // signpost camera has specific placement
 		{
 			camheight = mo->scale << 7;
@@ -10287,13 +10287,17 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	if (!(multiplayer || netgame) && !splitscreen)
 	{
 		fixed_t vx = thiscam->x, vy = thiscam->y;
+		fixed_t vz = thiscam->z + thiscam->height / 2;
 		if (player->awayviewtics && player->awayviewmobj != NULL && !P_MobjWasRemoved(player->awayviewmobj))		// Camera must obviously exist
 		{
 			vx = player->awayviewmobj->x;
 			vy = player->awayviewmobj->y;
+			vz = player->awayviewmobj->z + player->awayviewmobj->height / 2;
 		}
 
-		if (P_AproxDistance(vx - mo->x, vy - mo->y) < FixedMul(48*FRACUNIT, mo->scale))
+		/* check z distance too for orbital camera */
+		if (P_AproxDistance(P_AproxDistance(vx - mo->x, vy - mo->y),
+					vz - ( mo->z + mo->height / 2 )) < FixedMul(48*FRACUNIT, mo->scale))
 			mo->flags2 |= MF2_SHADOW;
 		else
 			mo->flags2 &= ~MF2_SHADOW;

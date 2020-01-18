@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2000 by DooM Legacy Team.
-// Copyright (C) 2011-2016 by Matthew "Inuyasha" Walsh.
+// Copyright (C) 2011-2016 by Matthew "Kaito Sinclaire" Walsh.
 // Copyright (C) 1999-2019 by Sonic Team Junior.
 //
 // This program is free software distributed under the
@@ -1326,7 +1326,7 @@ static menuitem_t OP_OpenGLOptionsMenu[] =
 	{IT_STRING|IT_CVAR,         NULL, "Model lighting",      &cv_grmodellighting, 32},
 
 	{IT_HEADER, NULL, "General", NULL, 51},
-	{IT_STRING|IT_CVAR,         NULL, "Field of view",   &cv_grfov,            63},
+	{IT_STRING|IT_CVAR,         NULL, "Field of view",   &cv_fov,            63},
 	{IT_STRING|IT_CVAR,         NULL, "Quality",         &cv_scr_depth,        73},
 	{IT_STRING|IT_CVAR,         NULL, "Texture Filter",  &cv_grfiltermode,     83},
 	{IT_STRING|IT_CVAR,         NULL, "Anisotropic",     &cv_granisotropicmode,93},
@@ -1375,8 +1375,9 @@ static menuitem_t OP_SoundOptionsMenu[] =
 	{IT_HEADER, NULL, "Miscellaneous", NULL, 102},
 	{IT_STRING | IT_CVAR, NULL, "Closed Captioning", &cv_closedcaptioning, 114},
 	{IT_STRING | IT_CVAR, NULL, "Reset Music Upon Dying", &cv_resetmusic, 124},
+	{IT_STRING | IT_CVAR, NULL, "Default 1-Up sound", &cv_1upsound, 134},
 
-	{IT_STRING | IT_SUBMENU, NULL, "Advanced Settings...", &OP_SoundAdvancedDef, 144},
+	{IT_STRING | IT_SUBMENU, NULL, "Advanced Settings...", &OP_SoundAdvancedDef, 154},
 };
 
 #ifdef HAVE_OPENMPT
@@ -2877,6 +2878,7 @@ static void M_GoBack(INT32 choice)
 
 			menuactive = false;
 			wipetypepre = menupres[M_GetYoungestChildMenu()].exitwipe;
+			I_UpdateMouseGrab();
 			D_StartTitle();
 		}
 		else
@@ -3221,10 +3223,7 @@ boolean M_Responder(event_t *ev)
 
 			case KEY_ESCAPE: // Pop up menu
 				if (chat_on)
-				{
 					HU_clearChatChars();
-					chat_on = false;
-				}
 				else
 					M_StartControlPanel();
 				return true;
@@ -3602,6 +3601,8 @@ void M_ClearMenus(boolean callexitmenufunc)
 		currentMenu = &MainDef; // Not like it matters
 	menuactive = false;
 	hidetitlemap = false;
+
+	I_UpdateMouseGrab();
 }
 
 //
@@ -10506,15 +10507,78 @@ static void M_HandleConnectIP(INT32 choice)
 			break;
 
 		case KEY_DEL:
-			if (setupm_ip[0])
+			if (setupm_ip[0] && !shiftdown) // Shift+Delete is used for something else.
 			{
 				S_StartSound(NULL,sfx_menu1); // Tails
 				setupm_ip[0] = 0;
 			}
-			break;
+			if (!shiftdown) // Shift+Delete is used for something else.
+				break;
 
+			/* FALLTHRU */
 		default:
 			l = strlen(setupm_ip);
+
+			if ( ctrldown ) {
+				switch (choice) {
+					case 'v':
+					case 'V': // ctrl+v, pasting
+					{
+						const char *paste = I_ClipboardPaste();
+
+						if (paste != NULL) {
+							strncat(setupm_ip, paste, 28-1 - l); // Concat the ip field with clipboard
+							if (strlen(paste) != 0) // Don't play sound if nothing was pasted
+								S_StartSound(NULL,sfx_menu1); // Tails
+						}
+
+						break;
+					}
+					case KEY_INS:
+					case 'c':
+					case 'C': // ctrl+c, ctrl+insert, copying
+						I_ClipboardCopy(setupm_ip, l);
+						S_StartSound(NULL,sfx_menu1); // Tails
+						break;
+
+					case 'x':
+					case 'X': // ctrl+x, cutting
+						I_ClipboardCopy(setupm_ip, l);
+						S_StartSound(NULL,sfx_menu1); // Tails
+						setupm_ip[0] = 0;
+						break;
+
+					default: // otherwise do nothing
+						break;
+				}
+				break; // don't check for typed keys
+			}
+
+			if ( shiftdown ) {
+				switch (choice) {
+					case KEY_INS: // shift+insert, pasting
+						{
+							const char *paste = I_ClipboardPaste();
+
+							if (paste != NULL) {
+								strncat(setupm_ip, paste, 28-1 - l); // Concat the ip field with clipboard
+								if (strlen(paste) != 0) // Don't play sound if nothing was pasted
+									S_StartSound(NULL,sfx_menu1); // Tails
+							}
+
+							break;
+						}
+					case KEY_DEL: // shift+delete, cutting
+						I_ClipboardCopy(setupm_ip, l);
+						S_StartSound(NULL,sfx_menu1); // Tails
+						setupm_ip[0] = 0;
+						break;
+					default: // otherwise do nothing.
+						break;
+				}
+				break; // don't check for typed keys
+			}
+
 			if (l >= 28-1)
 				break;
 
