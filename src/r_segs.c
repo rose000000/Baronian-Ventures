@@ -24,7 +24,6 @@
 #include "m_misc.h"
 #include "p_local.h" // Camera...
 #include "p_slopes.h"
-#include "console.h" // con_clipviewtop
 
 // OPTIMIZE: closed two sided lines as single sided
 
@@ -2910,7 +2909,7 @@ static void R_RenderThickSegLoop(void)
 
 	ffloor_t *pfloor = rw.pfloor;
 	fixed_t bottombounds = viewheight << FRACBITS;
-	fixed_t topbounds = (con_clipviewtop - 1) << FRACBITS;
+	fixed_t topbounds = 0;
 
 #ifdef ESLOPE
 	INT32 oldx = -1;

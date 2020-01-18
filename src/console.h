@@ -22,9 +22,6 @@ extern boolean con_recalc;
 
 extern boolean con_startup;
 
-// top clip value for view render: do not draw part of view hidden by console
-extern INT32 con_clipviewtop;
-
 // 0 means console if off, or moving out
 extern INT32 con_destlines;
 
