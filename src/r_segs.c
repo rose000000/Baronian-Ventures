@@ -699,10 +699,10 @@ static void R_SegTextured(fixed_t hyp, boolean longboi)
 }
 
 //
-// R_CheckMaskedTextures
-// Midtexture stuff, presumably.
+// R_CheckThickSides
+// Thick side stuff, presumably.
 //
-static void R_CheckMaskedTextures(void)
+static void R_CheckThickSides(void)
 {
 	INT32 i = 0;
 
@@ -929,7 +929,14 @@ static void R_CheckMaskedTextures(void)
 
 		ds_p->numthicksides = numthicksides = i;
 	}
+}
 
+//
+// R_CheckMaskedTextures
+// Midtexture stuff, presumably.
+//
+static void R_CheckMaskedTextures(void)
+{
 	if (sidedef->midtexture > 0 && sidedef->midtexture < numtextures)
 	{
 		// masked midtexture
@@ -2085,7 +2092,10 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	R_StoreWallSilhouette();
 	R_CheckWallTextures();
 	if (backsector)
+	{
+		R_CheckThickSides();
 		R_CheckMaskedTextures();
+	}
 
 #undef SLOPEPARAMS
 
