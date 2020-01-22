@@ -449,13 +449,14 @@ static void R_RenderSegLoop (void)
 	}
 }
 
-// Macro for slope bullshit
+#ifdef ESLOPE
 #define SLOPEPARAMS(slope, end1, end2, normalheight) \
 	if (slope) { \
 		end1 = P_GetZAt(slope, segleft.x, segleft.y); \
 		end2 = P_GetZAt(slope, segright.x, segright.y); \
 	} else \
 		end1 = end2 = normalheight;
+#endif
 
 //
 // R_CalculateSegDistance
