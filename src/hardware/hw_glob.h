@@ -121,8 +121,6 @@ void HWR_GetFadeMask(lumpnum_t fademasklumpnum);
 extern float gr_patch_scalex;
 extern float gr_patch_scaley;
 
-extern consvar_t cv_grrounddown; // on/off
-
 extern INT32 patchformat;
 extern INT32 textureformat;
 

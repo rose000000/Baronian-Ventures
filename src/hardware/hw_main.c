@@ -6559,7 +6559,6 @@ consvar_t cv_grmodellighting = {"gr_modellighting", "Off", CV_SAVE|CV_CALL, CV_O
 consvar_t cv_grspritebillboarding = {"gr_spritebillboarding", "Off", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_grskydome = {"gr_skydome", "On", CV_SAVE, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 
-consvar_t cv_grrounddown = {"gr_rounddown", "Off", 0, CV_OnOff, NULL, 0, NULL, NULL, 0, 0, NULL};
 consvar_t cv_grfogdensity = {"gr_fogdensity", "150", CV_CALL|CV_NOINIT, CV_Unsigned,
                              CV_grfogdensity_OnChange, 0, NULL, NULL, 0, 0, NULL};
 
@@ -6620,7 +6619,6 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_grspritebillboarding);
 
 	CV_RegisterVar(&cv_grfiltermode);
-	CV_RegisterVar(&cv_grrounddown);
 	CV_RegisterVar(&cv_grcorrecttricks);
 	CV_RegisterVar(&cv_grsolvetjoin);
 
