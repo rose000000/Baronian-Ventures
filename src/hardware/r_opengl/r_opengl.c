@@ -1215,7 +1215,7 @@ EXPORT void HWRAPI(SetTexture) (FTextureInfo *pTexInfo)
 			}
 		}
 		else
-			DBG_Printf ("SetTexture(bad format) %ld\n", pTexInfo->grInfo.format);
+			DBG_Printf ("SetTexture(bad format) %d\n", pTexInfo->grInfo.format);
 
 		pTexInfo->downloaded = NextTexAvail++;
 		tex_downloaded = pTexInfo->downloaded;

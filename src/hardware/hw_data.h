@@ -38,33 +38,31 @@
 // Glide API leftovers. Some of them have no direct OpenGL equivalent.
 //
 
-typedef unsigned long   FxU32;
-typedef long            FxI32;
+typedef INT32 HWRTextureFormat_t;
 
-typedef FxI32 GrTextureFormat_t;
-#define GR_TEXFMT_ALPHA_8               0x2 /* (0..0xFF) alpha     */
-#define GR_TEXFMT_INTENSITY_8           0x3 /* (0..0xFF) intensity */
-#define GR_TEXFMT_ALPHA_INTENSITY_44    0x4
-#define GR_TEXFMT_P_8                   0x5 /* 8-bit palette */
-#define GR_TEXFMT_RGB_565               0xa
-#define GR_TEXFMT_ARGB_1555             0xb
-#define GR_TEXFMT_ARGB_4444             0xc
-#define GR_TEXFMT_ALPHA_INTENSITY_88    0xd
-#define GR_TEXFMT_AP_88                 0xe /* 8-bit alpha 8-bit palette */
-#define GR_RGBA                         0x6 // 32 bit RGBA !
+#define GR_TEXFMT_ALPHA_8               0x2 /* (0..0xFF) alpha     (used for fade masks) */
+#define GR_TEXFMT_INTENSITY_8           0x3 /* (0..0xFF) intensity              (unused) */
+#define GR_TEXFMT_ALPHA_INTENSITY_44    0x4 /*                                  (unused) */
+#define GR_TEXFMT_P_8                   0x5 /* 8-bit palette            (used for flats) */
+#define GR_RGBA                         0x6 /* 32 bit RGBA!         (not a Glide format) */
+#define GR_TEXFMT_RGB_565               0xa /*                                  (unused) */
+#define GR_TEXFMT_ARGB_1555             0xb /*                                  (unused) */
+#define GR_TEXFMT_ARGB_4444             0xc /*                                  (unused) */
+#define GR_TEXFMT_ALPHA_INTENSITY_88    0xd /*                                  (unused) */
+#define GR_TEXFMT_AP_88                 0xe /* 8-bit alpha 8-bit palette        (unused) */
 
 typedef struct
 {
-	GrTextureFormat_t format;
-	void              *data;
-} GrTexInfo;
+	HWRTextureFormat_t format;
+	void               *data;
+} HWRTexInfo;
 
 // grInfo.data holds the address of the graphics data cached in heap memory
 //                NULL if the texture is not in Doom heap cache.
 struct GLMipmap_s
 {
-	GrTexInfo       grInfo;         //for TexDownloadMipMap
-	FxU32           flags;
+	HWRTexInfo      grInfo;         //for TexDownloadMipMap
+	UINT32          flags;
 	UINT16          height;
 	UINT16          width;
 	UINT32          downloaded;     // the dll driver have it in there cache ?

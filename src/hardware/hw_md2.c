@@ -148,7 +148,7 @@ static void PNG_warn(png_structp PNG, png_const_charp pngtext)
 	CONS_Debug(DBG_RENDER, "libpng warning at %p: %s", PNG, pngtext);
 }
 
-static GrTextureFormat_t PNG_Load(const char *filename, int *w, int *h, GLPatch_t *grpatch)
+static HWRTextureFormat_t PNG_Load(const char *filename, int *w, int *h, GLPatch_t *grpatch)
 {
 	png_structp png_ptr;
 	png_infop png_info_ptr;
@@ -278,7 +278,7 @@ typedef struct
 	UINT8 filler[54];
 } PcxHeader;
 
-static GrTextureFormat_t PCX_Load(const char *filename, int *w, int *h,
+static HWRTextureFormat_t PCX_Load(const char *filename, int *w, int *h,
 	GLPatch_t *grpatch)
 {
 	PcxHeader header;
