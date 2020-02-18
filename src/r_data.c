@@ -2465,16 +2465,20 @@ extracolormap_t *R_AddColormaps(extracolormap_t *exc_augend, extracolormap_t *ex
 
 // Thanks to quake2 source!
 // utils3/qdata/images.c
-UINT8 NearestColor(UINT8 r, UINT8 g, UINT8 b)
+UINT8 NearestPaletteColor(UINT8 r, UINT8 g, UINT8 b, RGBA_t *palette)
 {
 	int dr, dg, db;
 	int distortion, bestdistortion = 256 * 256 * 4, bestcolor = 0, i;
 
+	// Use master palette if none specified
+	if (palette == NULL)
+		palette = pMasterPalette;
+
 	for (i = 0; i < 256; i++)
 	{
-		dr = r - pMasterPalette[i].s.red;
-		dg = g - pMasterPalette[i].s.green;
-		db = b - pMasterPalette[i].s.blue;
+		dr = r - palette[i].s.red;
+		dg = g - palette[i].s.green;
+		db = b - palette[i].s.blue;
 		distortion = dr*dr + dg*dg + db*db;
 		if (distortion < bestdistortion)
 		{
@@ -2726,14 +2730,29 @@ void R_PrecacheLevel(void)
 		for (j = 0; j < sprites[i].numframes; j++)
 		{
 			sf = &sprites[i].spriteframes[j];
-			for (k = 0; k < 8; k++)
+#define cacheang(a) {\
+		lump = sf->lumppat[a];\
+		if (devparm)\
+			spritememory += W_LumpLength(lump);\
+		W_CachePatchNum(lump, PU_PATCH);\
+	}
+			// see R_InitSprites for more about lumppat,lumpid
+			switch (sf->rotate)
 			{
-				// see R_InitSprites for more about lumppat,lumpid
-				lump = sf->lumppat[k];
-				if (devparm)
-					spritememory += W_LumpLength(lump);
-				W_CachePatchNum(lump, PU_PATCH);
+				case SRF_SINGLE:
+					cacheang(0);
+					break;
+				case SRF_2D:
+					cacheang(2);
+					cacheang(6);
+					break;
+				default:
+					k = (sf->rotate & SRF_3DGE ? 16 : 8);
+					while (k--)
+						cacheang(k);
+					break;
 			}
+#undef cacheang
 		}
 	}
 	free(spritepresent);
