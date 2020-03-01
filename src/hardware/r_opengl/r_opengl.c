@@ -2277,17 +2277,12 @@ EXPORT INT32  HWRAPI(GetTextureUsed) (void)
 	while (tmp)
 	{
 		// Figure out the correct bytes-per-pixel for this texture
-		// I don't know which one the game actually _uses_ but this
-		// follows format2bpp in hw_cache.c
-		int bpp = 1;
+		// See format2bpp in hw_cache.c
+		int bpp = 1; // Either GR_TEXFMT_P_8 or GR_TEXFMT_ALPHA_8.
 		int format = tmp->format;
 		if (format == GR_RGBA)
 			bpp = 4;
-		else if (format == GR_TEXFMT_RGB_565
-			|| format == GR_TEXFMT_ARGB_1555
-			|| format == GR_TEXFMT_ARGB_4444
-			|| format == GR_TEXFMT_ALPHA_INTENSITY_88
-			|| format == GR_TEXFMT_AP_88)
+		else if (format == GR_TEXFMT_AP_88 || format == GR_TEXFMT_ALPHA_INTENSITY_88)
 			bpp = 2;
 
 		// Add it up!

@@ -23,7 +23,7 @@
 #include "hw_glob.h"
 #include "hw_drv.h"
 
-#include "../doomstat.h"    //gamemode
+#include "../doomstat.h"
 #include "../i_video.h"     //rendermode
 #include "../r_data.h"
 #include "../w_wad.h"
@@ -36,24 +36,14 @@
 INT32 patchformat = GR_TEXFMT_AP_88; // use alpha for holes
 INT32 textureformat = GR_TEXFMT_P_8; // use chromakey for hole
 
-static const INT32 format2bpp[16] =
+static INT32 format2bpp(HWRTextureFormat format)
 {
-	0, //0
-	0, //1
-	1, //2  GR_TEXFMT_ALPHA_8
-	1, //3  GR_TEXFMT_INTENSITY_8
-	1, //4  GR_TEXFMT_ALPHA_INTENSITY_44
-	1, //5  GR_TEXFMT_P_8
-	4, //6  GR_RGBA
-	0, //7
-	0, //8
-	0, //9
-	2, //10 GR_TEXFMT_RGB_565
-	2, //11 GR_TEXFMT_ARGB_1555
-	2, //12 GR_TEXFMT_ARGB_4444
-	2, //13 GR_TEXFMT_ALPHA_INTENSITY_88
-	2, //14 GR_TEXFMT_AP_88
-};
+	if (format == GR_RGBA)
+		return 4;
+	else if (format == GR_TEXFMT_AP_88 || format == GR_TEXFMT_ALPHA_INTENSITY_88)
+		return 2;
+	return 1; // Either GR_TEXFMT_P_8 or GR_TEXFMT_ALPHA_8.
+}
 
 // This code was originally placed directly in HWR_DrawPatchInCache.
 // It is now split from it for my sanity! (and the sanity of others)
@@ -313,7 +303,7 @@ static void HWR_DrawPatchInCache(GLMipmap_t *mipmap,
 	yfracstep = (pheight       << FRACBITS) / pblockheight;
 	scale_y   = (pblockheight  << FRACBITS) / pheight;
 
-	bpp = format2bpp[mipmap->format];
+	bpp = format2bpp(mipmap->format);
 
 	if (bpp < 1 || bpp > 4)
 		I_Error("HWR_DrawPatchInCache: no drawer defined for this bpp (%d)\n",bpp);
@@ -406,7 +396,7 @@ static void HWR_DrawTexturePatchInCache(GLMipmap_t *mipmap,
 	yfracstep = (texture->height<< FRACBITS) / pblockheight;
 	scale_y   = (pblockheight  << FRACBITS) / texture->height;
 
-	bpp = format2bpp[mipmap->format];
+	bpp = format2bpp(mipmap->format);
 
 	if (bpp < 1 || bpp > 4)
 		I_Error("HWR_DrawPatchInCache: no drawer defined for this bpp (%d)\n",bpp);
@@ -437,7 +427,7 @@ static UINT8 *MakeBlock(GLMipmap_t *grMipmap)
 	UINT16 bu16 = ((0x00 <<8) | HWR_PATCHES_CHROMAKEY_COLORINDEX);
 	INT32 blocksize = (grMipmap->width * grMipmap->height);
 
-	bpp =  format2bpp[grMipmap->format];
+	bpp =  format2bpp(grMipmap->format);
 	block = Z_Malloc(blocksize*bpp, PU_HWRCACHE, &(grMipmap->data));
 
 	switch (bpp)
@@ -543,7 +533,7 @@ static void HWR_GenerateTexture(INT32 texnum, GLTexture_t *grtex)
 			Z_Unlock(realpatch);
 	}
 	//Hurdler: not efficient at all but I don't remember exactly how HWR_DrawPatchInCache works :(
-	if (format2bpp[grtex->mipmap.format]==4)
+	if (format2bpp(grtex->mipmap.format)==4)
 	{
 		for (i = 3; i < blocksize*4; i += 4) // blocksize*4 because blocksize doesn't include the bpp
 		{
@@ -1002,7 +992,7 @@ static void HWR_DrawPicInCache(UINT8 *block, INT32 pblockwidth, INT32 pblockheig
 
 	stepy = ((INT32)SHORT(pic->height)<<FRACBITS)/pblockheight;
 	stepx = ((INT32)SHORT(pic->width)<<FRACBITS)/pblockwidth;
-	picbpp = format2bpp[picmode2GR[pic->mode]];
+	picbpp = format2bpp(picmode2GR[pic->mode]);
 	posy = 0;
 	for (j = 0; j < pblockheight; j++)
 	{
@@ -1097,16 +1087,16 @@ GLPatch_t *HWR_GetPic(lumpnum_t lumpnum)
 
 		if (grpatch->width  == SHORT(pic->width) &&
 			grpatch->height == SHORT(pic->height) &&
-			format2bpp[grpatch->mipmap->format] == format2bpp[picmode2GR[pic->mode]])
+			format2bpp(grpatch->mipmap->format) == format2bpp(picmode2GR[pic->mode]))
 		{
 			// no conversion needed
 			M_Memcpy(grpatch->mipmap->data, pic->data,len);
 		}
 		else
 			HWR_DrawPicInCache(block, SHORT(pic->width), SHORT(pic->height),
-			                   SHORT(pic->width)*format2bpp[grpatch->mipmap->format],
+			                   SHORT(pic->width)*format2bpp(grpatch->mipmap->format),
 			                   pic,
-			                   format2bpp[grpatch->mipmap->format]);
+			                   format2bpp(grpatch->mipmap->format));
 
 		Z_Unlock(pic);
 		Z_ChangeTag(block, PU_HWRCACHE_UNLOCKED);
