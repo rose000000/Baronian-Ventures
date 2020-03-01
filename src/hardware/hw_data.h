@@ -38,18 +38,19 @@
 // Glide API leftovers. Some of them have no direct OpenGL equivalent.
 //
 
-typedef INT32 HWRTextureFormat;
-
-#define GR_TEXFMT_ALPHA_8               0x2 /* (0..0xFF) alpha     (used for fade masks) */
-#define GR_TEXFMT_INTENSITY_8           0x3 /* (0..0xFF) intensity              (unused) */
-#define GR_TEXFMT_ALPHA_INTENSITY_44    0x4 /*                                  (unused) */
-#define GR_TEXFMT_P_8                   0x5 /* 8-bit palette            (used for flats) */
-#define GR_RGBA                         0x6 /* 32 bit RGBA!         (not a Glide format) */
-#define GR_TEXFMT_RGB_565               0xa /*                                  (unused) */
-#define GR_TEXFMT_ARGB_1555             0xb /*                                  (unused) */
-#define GR_TEXFMT_ARGB_4444             0xc /*                                  (unused) */
-#define GR_TEXFMT_ALPHA_INTENSITY_88    0xd /*                                  (unused) */
-#define GR_TEXFMT_AP_88                 0xe /* 8-bit alpha 8-bit palette        (unused) */
+typedef enum
+{
+	GR_TEXFMT_ALPHA_8            = 0x2, /* (0..0xFF) alpha     (used for fade masks) */
+	GR_TEXFMT_INTENSITY_8        = 0x3, /* (0..0xFF) intensity              (unused) */
+	GR_TEXFMT_ALPHA_INTENSITY_44 = 0x4, /*                                  (unused) */
+	GR_TEXFMT_P_8                = 0x5, /* 8-bit palette            (used for flats) */
+	GR_RGBA                      = 0x6, /* 32 bit RGBA!         (not a Glide format) */
+	GR_TEXFMT_RGB_565            = 0xa, /*                                  (unused) */
+	GR_TEXFMT_ARGB_1555          = 0xb, /*                                  (unused) */
+	GR_TEXFMT_ARGB_4444          = 0xc, /*                                  (unused) */
+	GR_TEXFMT_ALPHA_INTENSITY_88 = 0xd, /*                                  (unused) */
+	GR_TEXFMT_AP_88              = 0xe, /* 8-bit alpha 8-bit palette        (unused) */
+} HWRTextureFormat;
 
 // .data holds the address of the graphics data cached in heap memory
 //                NULL if the texture is not in Doom heap cache.
@@ -58,7 +59,7 @@ struct GLMipmap_s
 	// Basic texture info
 	UINT16             width, height;
 	UINT32             flags;         // Texture flags (TF_)
-	HWRTextureFormat   format;        // GR_ (put those in an enum, maybe?)
+	HWRTextureFormat   format;        // GR_ enumeration
 	void               *data;
 
 	// Colormaps
