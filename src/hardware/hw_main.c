@@ -807,9 +807,7 @@ static void HWR_RenderSkyPlane(extrasubsector_t *xsub, fixed_t fixedheight)
 #ifdef WALLSPLATS
 static void HWR_DrawSegsSplats(FSurfaceInfo * pSurf)
 {
-	FOutVector trVerts[4], *wv;
-	wallVert3D wallVerts[4];
-	wallVert3D *pwallVerts;
+	FOutVector wallVerts[4];
 	wallsplat_t *splat;
 	GLPatch_t *gpatch;
 	fixed_t i;
@@ -848,22 +846,9 @@ static void HWR_DrawSegsSplats(FSurfaceInfo * pSurf)
 		wallVerts[2].y = wallVerts[3].y = FIXED_TO_FLOAT(i)+(gpatch->height>>1);
 		wallVerts[0].y = wallVerts[1].y = FIXED_TO_FLOAT(i)-(gpatch->height>>1);
 
-		wallVerts[3].s = wallVerts[3].t = wallVerts[2].s = wallVerts[0].t = 0.0f;
-		wallVerts[1].s = wallVerts[1].t = wallVerts[2].t = wallVerts[0].s = 1.0f;
+		wallVerts[3].tow = wallVerts[3].sow = wallVerts[2].tow = wallVerts[0].sow = 0.0f;
+		wallVerts[1].tow = wallVerts[1].sow = wallVerts[2].sow = wallVerts[0].tow = 1.0f;
 
-		// transform
-		wv = trVerts;
-		pwallVerts = wallVerts;
-		for (i = 0; i < 4; i++,wv++,pwallVerts++)
-		{
-			wv->x   = pwallVerts->x;
-			wv->z = pwallVerts->z;
-			wv->y   = pwallVerts->y;
-
-			// Kalaron: TOW and SOW needed to be switched
-			wv->sow = pwallVerts->t;
-			wv->tow = pwallVerts->s;
-		}
 		M_Memcpy(&pSurf2,pSurf,sizeof (FSurfaceInfo));
 		switch (splat->flags & SPLATDRAWMODE_MASK)
 		{
@@ -912,7 +897,7 @@ FBITFIELD HWR_TranstableToAlpha(INT32 transtablenum, FSurfaceInfo *pSurf)
 //         clipped so that only a visible portion of the wall seg is drawn.
 // floorheight, ceilingheight : depend on wall upper/lower/middle, comes from the sectors.
 
-static void HWR_AddTransparentWall(wallVert3D *wallVerts, FSurfaceInfo * pSurf, INT32 texnum, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap);
+static void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo * pSurf, INT32 texnum, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap);
 
 // -----------------+
 // HWR_ProjectWall  :
@@ -924,45 +909,10 @@ static void HWR_AddTransparentWall(wallVert3D *wallVerts, FSurfaceInfo * pSurf, 
 		|/ |
 		0--1
 */
-static void HWR_ProjectWall(wallVert3D   * wallVerts,
+static void HWR_ProjectWall(FOutVector   * wallVerts,
                                     FSurfaceInfo * pSurf,
                                     FBITFIELD blendmode, INT32 lightlevel, extracolormap_t *wallcolormap)
 {
-	FOutVector  trVerts[4];
-	FOutVector  *wv;
-
-	// transform
-	wv = trVerts;
-	// it sounds really stupid to do this conversion with the new T&L code
-	// we should directly put the right information in the right structure
-	// wallVerts3D seems ok, doesn't need FOutVector
-	// also remove the light copy
-
-	// More messy to unwrap, but it's also quicker, uses less memory.
-	wv->sow = wallVerts->s;
-	wv->tow = wallVerts->t;
-	wv->x   = wallVerts->x;
-	wv->y   = wallVerts->y;
-	wv->z   = wallVerts->z;
-	wv++; wallVerts++;
-	wv->sow = wallVerts->s;
-	wv->tow = wallVerts->t;
-	wv->x   = wallVerts->x;
-	wv->y   = wallVerts->y;
-	wv->z   = wallVerts->z;
-	wv++; wallVerts++;
-	wv->sow = wallVerts->s;
-	wv->tow = wallVerts->t;
-	wv->x   = wallVerts->x;
-	wv->y   = wallVerts->y;
-	wv->z   = wallVerts->z;
-	wv++; wallVerts++;
-	wv->sow = wallVerts->s;
-	wv->tow = wallVerts->t;
-	wv->x   = wallVerts->x;
-	wv->y   = wallVerts->y;
-	wv->z   = wallVerts->z;
-
 	if (wallcolormap)
 	{
 		pSurf->FlatColor.rgba = HWR_Lighting(lightlevel, wallcolormap->rgba, wallcolormap->fadergba, false, false);
@@ -972,7 +922,7 @@ static void HWR_ProjectWall(wallVert3D   * wallVerts,
 		pSurf->FlatColor.rgba = HWR_Lighting(lightlevel, NORMALFOG, FADEFOG, false, false);
 	}
 
-	HWD.pfnDrawPolygon(pSurf, trVerts, 4, blendmode|PF_Modulated|PF_Occlude|PF_Clip);
+	HWD.pfnDrawPolygon(pSurf, wallVerts, 4, blendmode|PF_Modulated|PF_Occlude|PF_Clip);
 
 #ifdef WALLSPLATS
 	if (gr_curline->linedef->splats && cv_splats.value)
@@ -980,7 +930,7 @@ static void HWR_ProjectWall(wallVert3D   * wallVerts,
 #endif
 #ifdef ALAM_LIGHTING
 	//Hurdler: TDOD: do static lighting using gr_curline->lm
-	HWR_WallLighting(trVerts);
+	HWR_WallLighting(wallVerts);
 
 	//Hurdler: for better dynamic light in dark area, we should draw the light first
 	//         and then the wall all that with the right blending func
@@ -1058,7 +1008,7 @@ static FUINT HWR_CalcWallLight(FUINT lightnum, fixed_t v1x, fixed_t v1y, fixed_t
 //
 // HWR_SplitWall
 //
-static void HWR_SplitWall(sector_t *sector, wallVert3D *wallVerts, INT32 texnum, FSurfaceInfo* Surf, INT32 cutflag, ffloor_t *pfloor)
+static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum, FSurfaceInfo* Surf, INT32 cutflag, ffloor_t *pfloor)
 {
 	/* SoM: split up and light walls according to the
 	 lightlist. This may also include leaving out parts
@@ -1091,15 +1041,15 @@ static void HWR_SplitWall(sector_t *sector, wallVert3D *wallVerts, INT32 texnum,
 
 	realtop = top = wallVerts[3].y;
 	realbot = bot = wallVerts[0].y;
-	pegt = wallVerts[3].t;
-	pegb = wallVerts[0].t;
+	pegt = wallVerts[3].tow;
+	pegb = wallVerts[0].tow;
 	pegmul = (pegb - pegt) / (top - bot);
 
 #ifdef ESLOPE
 	endrealtop = endtop = wallVerts[2].y;
 	endrealbot = endbot = wallVerts[1].y;
-	endpegt = wallVerts[2].t;
-	endpegb = wallVerts[1].t;
+	endpegt = wallVerts[2].tow;
+	endpegb = wallVerts[1].tow;
 	endpegmul = (endpegb - endpegt) / (endtop - endbot);
 #endif
 
@@ -1234,10 +1184,10 @@ static void HWR_SplitWall(sector_t *sector, wallVert3D *wallVerts, INT32 texnum,
 		Surf->FlatColor.s.alpha = alpha;
 
 #ifdef ESLOPE
-		wallVerts[3].t = pegt + ((realtop - top) * pegmul);
-		wallVerts[2].t = endpegt + ((endrealtop - endtop) * endpegmul);
-		wallVerts[0].t = pegt + ((realtop - bot) * pegmul);
-		wallVerts[1].t = endpegt + ((endrealtop - endbot) * endpegmul);
+		wallVerts[3].tow = pegt + ((realtop - top) * pegmul);
+		wallVerts[2].tow = endpegt + ((endrealtop - endtop) * endpegmul);
+		wallVerts[0].tow = pegt + ((realtop - bot) * pegmul);
+		wallVerts[1].tow = endpegt + ((endrealtop - endbot) * endpegmul);
 
 		// set top/bottom coords
 		wallVerts[3].y = top;
@@ -1245,8 +1195,8 @@ static void HWR_SplitWall(sector_t *sector, wallVert3D *wallVerts, INT32 texnum,
 		wallVerts[0].y = bot;
 		wallVerts[1].y = endbot;
 #else
-		wallVerts[3].t = wallVerts[2].t = pegt + ((realtop - top) * pegmul);
-		wallVerts[0].t = wallVerts[1].t = pegt + ((realtop - bot) * pegmul);
+		wallVerts[3].tow = wallVerts[2].tow = pegt + ((realtop - top) * pegmul);
+		wallVerts[0].tow = wallVerts[1].tow = pegt + ((realtop - bot) * pegmul);
 
 		// set top/bottom coords
 		wallVerts[2].y = wallVerts[3].y = top;
@@ -1277,10 +1227,10 @@ static void HWR_SplitWall(sector_t *sector, wallVert3D *wallVerts, INT32 texnum,
 	Surf->FlatColor.s.alpha = alpha;
 
 #ifdef ESLOPE
-	wallVerts[3].t = pegt + ((realtop - top) * pegmul);
-	wallVerts[2].t = endpegt + ((endrealtop - endtop) * endpegmul);
-	wallVerts[0].t = pegt + ((realtop - bot) * pegmul);
-	wallVerts[1].t = endpegt + ((endrealtop - endbot) * endpegmul);
+	wallVerts[3].tow = pegt + ((realtop - top) * pegmul);
+	wallVerts[2].tow = endpegt + ((endrealtop - endtop) * endpegmul);
+	wallVerts[0].tow = pegt + ((realtop - bot) * pegmul);
+	wallVerts[1].tow = endpegt + ((endrealtop - endbot) * endpegmul);
 
 	// set top/bottom coords
 	wallVerts[3].y = top;
@@ -1288,8 +1238,8 @@ static void HWR_SplitWall(sector_t *sector, wallVert3D *wallVerts, INT32 texnum,
 	wallVerts[0].y = bot;
 	wallVerts[1].y = endbot;
 #else
-    wallVerts[3].t = wallVerts[2].t = pegt + ((realtop - top) * pegmul);
-    wallVerts[0].t = wallVerts[1].t = pegt + ((realtop - bot) * pegmul);
+    wallVerts[3].tow = wallVerts[2].tow = pegt + ((realtop - top) * pegmul);
+    wallVerts[0].tow = wallVerts[1].tow = pegt + ((realtop - bot) * pegmul);
 
     // set top/bottom coords
     wallVerts[2].y = wallVerts[3].y = top;
@@ -1306,14 +1256,14 @@ static void HWR_SplitWall(sector_t *sector, wallVert3D *wallVerts, INT32 texnum,
 
 // HWR_DrawSkyWall
 // Draw walls into the depth buffer so that anything behind is culled properly
-static void HWR_DrawSkyWall(wallVert3D *wallVerts, FSurfaceInfo *Surf)
+static void HWR_DrawSkyWall(FOutVector *wallVerts, FSurfaceInfo *Surf)
 {
 	HWD.pfnSetTexture(NULL);
 	// no texture
-	wallVerts[3].t = wallVerts[2].t = 0;
-	wallVerts[0].t = wallVerts[1].t = 0;
-	wallVerts[0].s = wallVerts[3].s = 0;
-	wallVerts[2].s = wallVerts[1].s = 0;
+	wallVerts[3].tow = wallVerts[2].tow = 0;
+	wallVerts[0].tow = wallVerts[1].tow = 0;
+	wallVerts[0].sow = wallVerts[3].sow = 0;
+	wallVerts[2].sow = wallVerts[1].sow = 0;
 	// this no longer sets top/bottom coords, this should be done before caling the function
 	HWR_ProjectWall(wallVerts, Surf, PF_Invisible|PF_Clip|PF_NoTexture, 255, NULL);
 	// PF_Invisible so it's not drawn into the colour buffer
@@ -1334,7 +1284,7 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 static void HWR_StoreWallRange(double startfrac, double endfrac)
 #endif
 {
-	wallVert3D wallVerts[4];
+	FOutVector wallVerts[4];
 	v2d_t vs, ve; // start, end vertices of 2d line (view from above)
 
 	fixed_t worldtop, worldbottom;
@@ -1499,33 +1449,33 @@ static void HWR_StoreWallRange(double startfrac, double endfrac)
 				// This is so that it doesn't overflow and screw up the wall, it doesn't need to go higher than the texture's height anyway
 				texturevpegtop %= SHORT(textures[gr_toptexture]->height)<<FRACBITS;
 
-				wallVerts[3].t = wallVerts[2].t = texturevpegtop * grTex->scaleY;
-				wallVerts[0].t = wallVerts[1].t = (texturevpegtop + gr_frontsector->ceilingheight - gr_backsector->ceilingheight) * grTex->scaleY;
-				wallVerts[0].s = wallVerts[3].s = cliplow * grTex->scaleX;
-				wallVerts[2].s = wallVerts[1].s = cliphigh * grTex->scaleX;
+				wallVerts[3].tow = wallVerts[2].tow = texturevpegtop * grTex->scaleY;
+				wallVerts[0].tow = wallVerts[1].tow = (texturevpegtop + gr_frontsector->ceilingheight - gr_backsector->ceilingheight) * grTex->scaleY;
+				wallVerts[0].sow = wallVerts[3].sow = cliplow * grTex->scaleX;
+				wallVerts[2].sow = wallVerts[1].sow = cliphigh * grTex->scaleX;
 
 #ifdef ESLOPE
 				// Adjust t value for sloped walls
 				if (!(gr_linedef->flags & ML_EFFECT1))
 				{
 					// Unskewed
-					wallVerts[3].t -= (worldtop - gr_frontsector->ceilingheight) * grTex->scaleY;
-					wallVerts[2].t -= (worldtopslope - gr_frontsector->ceilingheight) * grTex->scaleY;
-					wallVerts[0].t -= (worldhigh - gr_backsector->ceilingheight) * grTex->scaleY;
-					wallVerts[1].t -= (worldhighslope - gr_backsector->ceilingheight) * grTex->scaleY;
+					wallVerts[3].tow -= (worldtop - gr_frontsector->ceilingheight) * grTex->scaleY;
+					wallVerts[2].tow -= (worldtopslope - gr_frontsector->ceilingheight) * grTex->scaleY;
+					wallVerts[0].tow -= (worldhigh - gr_backsector->ceilingheight) * grTex->scaleY;
+					wallVerts[1].tow -= (worldhighslope - gr_backsector->ceilingheight) * grTex->scaleY;
 				}
 				else if (gr_linedef->flags & ML_DONTPEGTOP)
 				{
 					// Skewed by top
-					wallVerts[0].t = (texturevpegtop + worldtop - worldhigh) * grTex->scaleY;
-					wallVerts[1].t = (texturevpegtop + worldtopslope - worldhighslope) * grTex->scaleY;
+					wallVerts[0].tow = (texturevpegtop + worldtop - worldhigh) * grTex->scaleY;
+					wallVerts[1].tow = (texturevpegtop + worldtopslope - worldhighslope) * grTex->scaleY;
 				}
 				else
 				{
 					// Skewed by bottom
-					wallVerts[0].t = wallVerts[1].t = (texturevpegtop + worldtop - worldhigh) * grTex->scaleY;
-					wallVerts[3].t = wallVerts[0].t - (worldtop - worldhigh) * grTex->scaleY;
-					wallVerts[2].t = wallVerts[1].t - (worldtopslope - worldhighslope) * grTex->scaleY;
+					wallVerts[0].tow = wallVerts[1].tow = (texturevpegtop + worldtop - worldhigh) * grTex->scaleY;
+					wallVerts[3].tow = wallVerts[0].tow - (worldtop - worldhigh) * grTex->scaleY;
+					wallVerts[2].tow = wallVerts[1].tow - (worldtopslope - worldhighslope) * grTex->scaleY;
 				}
 #endif
 			}
@@ -1581,33 +1531,33 @@ static void HWR_StoreWallRange(double startfrac, double endfrac)
 				// This is so that it doesn't overflow and screw up the wall, it doesn't need to go higher than the texture's height anyway
 				texturevpegbottom %= SHORT(textures[gr_bottomtexture]->height)<<FRACBITS;
 
-				wallVerts[3].t = wallVerts[2].t = texturevpegbottom * grTex->scaleY;
-				wallVerts[0].t = wallVerts[1].t = (texturevpegbottom + gr_backsector->floorheight - gr_frontsector->floorheight) * grTex->scaleY;
-				wallVerts[0].s = wallVerts[3].s = cliplow * grTex->scaleX;
-				wallVerts[2].s = wallVerts[1].s = cliphigh * grTex->scaleX;
+				wallVerts[3].tow = wallVerts[2].tow = texturevpegbottom * grTex->scaleY;
+				wallVerts[0].tow = wallVerts[1].tow = (texturevpegbottom + gr_backsector->floorheight - gr_frontsector->floorheight) * grTex->scaleY;
+				wallVerts[0].sow = wallVerts[3].sow = cliplow * grTex->scaleX;
+				wallVerts[2].sow = wallVerts[1].sow = cliphigh * grTex->scaleX;
 
 #ifdef ESLOPE
 				// Adjust t value for sloped walls
 				if (!(gr_linedef->flags & ML_EFFECT1))
 				{
 					// Unskewed
-					wallVerts[0].t -= (worldbottom - gr_frontsector->floorheight) * grTex->scaleY;
-					wallVerts[1].t -= (worldbottomslope - gr_frontsector->floorheight) * grTex->scaleY;
-					wallVerts[3].t -= (worldlow - gr_backsector->floorheight) * grTex->scaleY;
-					wallVerts[2].t -= (worldlowslope - gr_backsector->floorheight) * grTex->scaleY;
+					wallVerts[0].tow -= (worldbottom - gr_frontsector->floorheight) * grTex->scaleY;
+					wallVerts[1].tow -= (worldbottomslope - gr_frontsector->floorheight) * grTex->scaleY;
+					wallVerts[3].tow -= (worldlow - gr_backsector->floorheight) * grTex->scaleY;
+					wallVerts[2].tow -= (worldlowslope - gr_backsector->floorheight) * grTex->scaleY;
 				}
 				else if (gr_linedef->flags & ML_DONTPEGBOTTOM)
 				{
 					// Skewed by bottom
-					wallVerts[0].t = wallVerts[1].t = (texturevpegbottom + worldlow - worldbottom) * grTex->scaleY;
-					//wallVerts[3].t = wallVerts[0].t - (worldlow - worldbottom) * grTex->scaleY; // no need, [3] is already this
-					wallVerts[2].t = wallVerts[1].t - (worldlowslope - worldbottomslope) * grTex->scaleY;
+					wallVerts[0].tow = wallVerts[1].tow = (texturevpegbottom + worldlow - worldbottom) * grTex->scaleY;
+					//wallVerts[3].tow = wallVerts[0].tow - (worldlow - worldbottom) * grTex->scaleY; // no need, [3] is already this
+					wallVerts[2].tow = wallVerts[1].tow - (worldlowslope - worldbottomslope) * grTex->scaleY;
 				}
 				else
 				{
 					// Skewed by top
-					wallVerts[0].t = (texturevpegbottom + worldlow - worldbottom) * grTex->scaleY;
-					wallVerts[1].t = (texturevpegbottom + worldlowslope - worldbottomslope) * grTex->scaleY;
+					wallVerts[0].tow = (texturevpegbottom + worldlow - worldbottom) * grTex->scaleY;
+					wallVerts[1].tow = (texturevpegbottom + worldlowslope - worldbottomslope) * grTex->scaleY;
 				}
 #endif
 			}
@@ -1760,10 +1710,10 @@ static void HWR_StoreWallRange(double startfrac, double endfrac)
 
 				grTex = HWR_GetTexture(gr_midtexture);
 
-				wallVerts[3].t = wallVerts[2].t = texturevpeg * grTex->scaleY;
-				wallVerts[0].t = wallVerts[1].t = (h - l + texturevpeg) * grTex->scaleY;
-				wallVerts[0].s = wallVerts[3].s = cliplow * grTex->scaleX;
-				wallVerts[2].s = wallVerts[1].s = cliphigh * grTex->scaleX;
+				wallVerts[3].tow = wallVerts[2].tow = texturevpeg * grTex->scaleY;
+				wallVerts[0].tow = wallVerts[1].tow = (h - l + texturevpeg) * grTex->scaleY;
+				wallVerts[0].sow = wallVerts[3].sow = cliplow * grTex->scaleX;
+				wallVerts[2].sow = wallVerts[1].sow = cliphigh * grTex->scaleX;
 			}
 
 			// set top/bottom coords
@@ -1808,8 +1758,8 @@ static void HWR_StoreWallRange(double startfrac, double endfrac)
 						texturevpeg = textureheight[gr_sidedef->midtexture]*repeats - h + polybottom;
 					else
 						texturevpeg = polytop - h;
-					wallVerts[2].t = texturevpeg * grTex->scaleY;
-					wallVerts[1].t = (h - l + texturevpeg) * grTex->scaleY;
+					wallVerts[2].tow = texturevpeg * grTex->scaleY;
+					wallVerts[1].tow = (h - l + texturevpeg) * grTex->scaleY;
 				}
 
 				wallVerts[2].y = FIXED_TO_FLOAT(h);
@@ -1966,24 +1916,24 @@ static void HWR_StoreWallRange(double startfrac, double endfrac)
 
 				grTex = HWR_GetTexture(gr_midtexture);
 
-				wallVerts[3].t = wallVerts[2].t = texturevpeg * grTex->scaleY;
-				wallVerts[0].t = wallVerts[1].t = (texturevpeg + gr_frontsector->ceilingheight - gr_frontsector->floorheight) * grTex->scaleY;
-				wallVerts[0].s = wallVerts[3].s = cliplow * grTex->scaleX;
-				wallVerts[2].s = wallVerts[1].s = cliphigh * grTex->scaleX;
+				wallVerts[3].tow = wallVerts[2].tow = texturevpeg * grTex->scaleY;
+				wallVerts[0].tow = wallVerts[1].tow = (texturevpeg + gr_frontsector->ceilingheight - gr_frontsector->floorheight) * grTex->scaleY;
+				wallVerts[0].sow = wallVerts[3].sow = cliplow * grTex->scaleX;
+				wallVerts[2].sow = wallVerts[1].sow = cliphigh * grTex->scaleX;
 
 #ifdef ESLOPE
 				// Texture correction for slopes
 				if (gr_linedef->flags & ML_EFFECT2) {
-					wallVerts[3].t += (gr_frontsector->ceilingheight - worldtop) * grTex->scaleY;
-					wallVerts[2].t += (gr_frontsector->ceilingheight - worldtopslope) * grTex->scaleY;
-					wallVerts[0].t += (gr_frontsector->floorheight - worldbottom) * grTex->scaleY;
-					wallVerts[1].t += (gr_frontsector->floorheight - worldbottomslope) * grTex->scaleY;
+					wallVerts[3].tow += (gr_frontsector->ceilingheight - worldtop) * grTex->scaleY;
+					wallVerts[2].tow += (gr_frontsector->ceilingheight - worldtopslope) * grTex->scaleY;
+					wallVerts[0].tow += (gr_frontsector->floorheight - worldbottom) * grTex->scaleY;
+					wallVerts[1].tow += (gr_frontsector->floorheight - worldbottomslope) * grTex->scaleY;
 				} else if (gr_linedef->flags & ML_DONTPEGBOTTOM) {
-					wallVerts[3].t = wallVerts[0].t + (worldbottom-worldtop) * grTex->scaleY;
-					wallVerts[2].t = wallVerts[1].t + (worldbottomslope-worldtopslope) * grTex->scaleY;
+					wallVerts[3].tow = wallVerts[0].tow + (worldbottom-worldtop) * grTex->scaleY;
+					wallVerts[2].tow = wallVerts[1].tow + (worldbottomslope-worldtopslope) * grTex->scaleY;
 				} else {
-					wallVerts[0].t = wallVerts[3].t - (worldbottom-worldtop) * grTex->scaleY;
-					wallVerts[1].t = wallVerts[2].t - (worldbottomslope-worldtopslope) * grTex->scaleY;
+					wallVerts[0].tow = wallVerts[3].tow - (worldbottom-worldtop) * grTex->scaleY;
+					wallVerts[1].tow = wallVerts[2].tow - (worldbottomslope-worldtopslope) * grTex->scaleY;
 				}
 #endif
 			}
@@ -2103,10 +2053,10 @@ static void HWR_StoreWallRange(double startfrac, double endfrac)
 #endif
 				if (rover->flags & FF_FOG)
 				{
-					wallVerts[3].t = wallVerts[2].t = 0;
-					wallVerts[0].t = wallVerts[1].t = 0;
-					wallVerts[0].s = wallVerts[3].s = 0;
-					wallVerts[2].s = wallVerts[1].s = 0;
+					wallVerts[3].tow = wallVerts[2].tow = 0;
+					wallVerts[0].tow = wallVerts[1].tow = 0;
+					wallVerts[0].sow = wallVerts[3].sow = 0;
+					wallVerts[2].sow = wallVerts[1].sow = 0;
 				}
 				else
 				{
@@ -2143,35 +2093,35 @@ static void HWR_StoreWallRange(double startfrac, double endfrac)
 					{
 						if (attachtobottom)
 							texturevpeg -= *rover->topheight - *rover->bottomheight;
-						wallVerts[3].t = (*rover->topheight - h + texturevpeg) * grTex->scaleY;
-						wallVerts[2].t = (*rover->topheight - hS + texturevpeg) * grTex->scaleY;
-						wallVerts[0].t = (*rover->topheight - l + texturevpeg) * grTex->scaleY;
-						wallVerts[1].t = (*rover->topheight - lS + texturevpeg) * grTex->scaleY;
+						wallVerts[3].tow = (*rover->topheight - h + texturevpeg) * grTex->scaleY;
+						wallVerts[2].tow = (*rover->topheight - hS + texturevpeg) * grTex->scaleY;
+						wallVerts[0].tow = (*rover->topheight - l + texturevpeg) * grTex->scaleY;
+						wallVerts[1].tow = (*rover->topheight - lS + texturevpeg) * grTex->scaleY;
 					}
 					else
 					{
 						if (!attachtobottom) // skew by top
 						{
-							wallVerts[3].t = wallVerts[2].t = texturevpeg * grTex->scaleY;
-							wallVerts[0].t = (h - l + texturevpeg) * grTex->scaleY;
-							wallVerts[1].t = (hS - lS + texturevpeg) * grTex->scaleY;
+							wallVerts[3].tow = wallVerts[2].tow = texturevpeg * grTex->scaleY;
+							wallVerts[0].tow = (h - l + texturevpeg) * grTex->scaleY;
+							wallVerts[1].tow = (hS - lS + texturevpeg) * grTex->scaleY;
 						}
 						else // skew by bottom
 						{
-							wallVerts[0].t = wallVerts[1].t = texturevpeg * grTex->scaleY;
-							wallVerts[3].t = wallVerts[0].t - (h - l) * grTex->scaleY;
-							wallVerts[2].t = wallVerts[1].t - (hS - lS) * grTex->scaleY;
+							wallVerts[0].tow = wallVerts[1].tow = texturevpeg * grTex->scaleY;
+							wallVerts[3].tow = wallVerts[0].tow - (h - l) * grTex->scaleY;
+							wallVerts[2].tow = wallVerts[1].tow - (hS - lS) * grTex->scaleY;
 						}
 					}
 #else
 					if (attachtobottom)
 						texturevpeg -= *rover->topheight - *rover->bottomheight;
-					wallVerts[3].t = wallVerts[2].t = (*rover->topheight - h + texturevpeg) * grTex->scaleY;
-					wallVerts[0].t = wallVerts[1].t = (*rover->topheight - l + texturevpeg) * grTex->scaleY;
+					wallVerts[3].tow = wallVerts[2].tow = (*rover->topheight - h + texturevpeg) * grTex->scaleY;
+					wallVerts[0].tow = wallVerts[1].tow = (*rover->topheight - l + texturevpeg) * grTex->scaleY;
 #endif
 
-					wallVerts[0].s = wallVerts[3].s = cliplow * grTex->scaleX;
-					wallVerts[2].s = wallVerts[1].s = cliphigh * grTex->scaleX;
+					wallVerts[0].sow = wallVerts[3].sow = cliplow * grTex->scaleX;
+					wallVerts[2].sow = wallVerts[1].sow = cliphigh * grTex->scaleX;
 				}
 				if (rover->flags & FF_FOG)
 				{
@@ -2269,10 +2219,10 @@ static void HWR_StoreWallRange(double startfrac, double endfrac)
 #endif
 				if (rover->flags & FF_FOG)
 				{
-					wallVerts[3].t = wallVerts[2].t = 0;
-					wallVerts[0].t = wallVerts[1].t = 0;
-					wallVerts[0].s = wallVerts[3].s = 0;
-					wallVerts[2].s = wallVerts[1].s = 0;
+					wallVerts[3].tow = wallVerts[2].tow = 0;
+					wallVerts[0].tow = wallVerts[1].tow = 0;
+					wallVerts[0].sow = wallVerts[3].sow = 0;
+					wallVerts[2].sow = wallVerts[1].sow = 0;
 				}
 				else
 				{
@@ -2280,17 +2230,17 @@ static void HWR_StoreWallRange(double startfrac, double endfrac)
 
 					if (newline)
 					{
-						wallVerts[3].t = wallVerts[2].t = (*rover->topheight - h + sides[newline->sidenum[0]].rowoffset) * grTex->scaleY;
-						wallVerts[0].t = wallVerts[1].t = (h - l + (*rover->topheight - h + sides[newline->sidenum[0]].rowoffset)) * grTex->scaleY;
+						wallVerts[3].tow = wallVerts[2].tow = (*rover->topheight - h + sides[newline->sidenum[0]].rowoffset) * grTex->scaleY;
+						wallVerts[0].tow = wallVerts[1].tow = (h - l + (*rover->topheight - h + sides[newline->sidenum[0]].rowoffset)) * grTex->scaleY;
 					}
 					else
 					{
-						wallVerts[3].t = wallVerts[2].t = (*rover->topheight - h + sides[rover->master->sidenum[0]].rowoffset) * grTex->scaleY;
-						wallVerts[0].t = wallVerts[1].t = (h - l + (*rover->topheight - h + sides[rover->master->sidenum[0]].rowoffset)) * grTex->scaleY;
+						wallVerts[3].tow = wallVerts[2].tow = (*rover->topheight - h + sides[rover->master->sidenum[0]].rowoffset) * grTex->scaleY;
+						wallVerts[0].tow = wallVerts[1].tow = (h - l + (*rover->topheight - h + sides[rover->master->sidenum[0]].rowoffset)) * grTex->scaleY;
 					}
 
-					wallVerts[0].s = wallVerts[3].s = cliplow * grTex->scaleX;
-					wallVerts[2].s = wallVerts[1].s = cliphigh * grTex->scaleX;
+					wallVerts[0].sow = wallVerts[3].sow = cliplow * grTex->scaleX;
+					wallVerts[2].sow = wallVerts[1].sow = cliphigh * grTex->scaleX;
 				}
 
 				if (rover->flags & FF_FOG)
@@ -4929,7 +4879,7 @@ static void HWR_SortVisSprites(void)
 // middle texture. This is used for sorting with sprites.
 typedef struct
 {
-	wallVert3D    wallVerts[4];
+	FOutVector    wallVerts[4];
 	FSurfaceInfo  Surf;
 	INT32         texnum;
 	FBITFIELD     blend;
@@ -4945,7 +4895,7 @@ typedef struct
 static wallinfo_t *wallinfo = NULL;
 static size_t numwalls = 0; // a list of transparent walls to be drawn
 
-static void HWR_RenderWall(wallVert3D   *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap);
+static void HWR_RenderWall(FOutVector   *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap);
 
 #define MAX_TRANSPARENTWALL 256
 
@@ -6743,7 +6693,7 @@ static void HWR_Render3DWater(void)
 }
 #endif
 
-static void HWR_AddTransparentWall(wallVert3D *wallVerts, FSurfaceInfo *pSurf, INT32 texnum, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap)
+static void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, INT32 texnum, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap)
 {
 	static size_t allocedwalls = 0;
 
@@ -6803,29 +6753,9 @@ static void HWR_RenderTransparentWalls(void)
 }
 #endif
 
-static void HWR_RenderWall(wallVert3D   *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap)
+static void HWR_RenderWall(FOutVector   *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap)
 {
-	FOutVector  trVerts[4];
-	UINT8       i;
-	FOutVector  *wv;
-	UINT8 alpha;
-
-	// transform
-	wv = trVerts;
-	// it sounds really stupid to do this conversion with the new T&L code
-	// we should directly put the right information in the right structure
-	// wallVerts3D seems ok, doesn't need FOutVector
-	// also remove the light copy
-	for (i = 0; i < 4; i++, wv++, wallVerts++)
-	{
-		wv->sow = wallVerts->s;
-		wv->tow = wallVerts->t;
-		wv->x   = wallVerts->x;
-		wv->y   = wallVerts->y;
-		wv->z = wallVerts->z;
-	}
-
-	alpha = pSurf->FlatColor.s.alpha; // retain the alpha
+	UINT8 alpha = pSurf->FlatColor.s.alpha; // retain the alpha
 
 	// Lighting is done here instead so that fog isn't drawn incorrectly on transparent walls after sorting
 	if (wallcolormap)
@@ -6846,9 +6776,9 @@ static void HWR_RenderWall(wallVert3D   *wallVerts, FSurfaceInfo *pSurf, FBITFIE
 	pSurf->FlatColor.s.alpha = alpha; // put the alpha back after lighting
 
 	if (blend & PF_Environment)
-		HWD.pfnDrawPolygon(pSurf, trVerts, 4, blend|PF_Modulated|PF_Clip|PF_Occlude); // PF_Occlude must be used for solid objects
+		HWD.pfnDrawPolygon(pSurf, wallVerts, 4, blend|PF_Modulated|PF_Clip|PF_Occlude); // PF_Occlude must be used for solid objects
 	else
-		HWD.pfnDrawPolygon(pSurf, trVerts, 4, blend|PF_Modulated|PF_Clip); // No PF_Occlude means overlapping (incorrect) transparency
+		HWD.pfnDrawPolygon(pSurf, wallVerts, 4, blend|PF_Modulated|PF_Clip); // No PF_Occlude means overlapping (incorrect) transparency
 
 #ifdef WALLSPLATS
 	if (gr_curline->linedef->splats && cv_splats.value)
@@ -6856,7 +6786,7 @@ static void HWR_RenderWall(wallVert3D   *wallVerts, FSurfaceInfo *pSurf, FBITFIE
 
 #ifdef ALAM_LIGHTING
 	//Hurdler: TODO: do static lighting using gr_curline->lm
-	HWR_WallLighting(trVerts);
+	HWR_WallLighting(wallVerts);
 #endif
 #endif
 }

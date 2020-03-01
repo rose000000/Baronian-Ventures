@@ -85,13 +85,6 @@ typedef struct FVector
 	FLOAT x,y,z;
 } FVector;
 
-// 3D model vector (coords + texture coords)
-typedef struct
-{
-	FLOAT       x,y,z;
-	FLOAT       s,t;            // texture coordinates
-} v3d_t, wallVert3D;
-
 //Hurdler: Transform (coords + angles)
 //BP: transform order : scale(rotation_x(rotation_y(translation(v))))
 
