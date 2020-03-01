@@ -6775,7 +6775,7 @@ static void HWR_RenderWall(FOutVector   *wallVerts, FSurfaceInfo *pSurf, FBITFIE
 	pSurf->FlatColor.s.alpha = alpha; // put the alpha back after lighting
 
 	if (blend & PF_Environment)
-		HWD.pfnDrawPolygon(pSurf, wallVerts, 4, blend|PF_Modulated||PF_Occlude); // PF_Occlude must be used for solid objects
+		HWD.pfnDrawPolygon(pSurf, wallVerts, 4, blend|PF_Modulated|PF_Occlude); // PF_Occlude must be used for solid objects
 	else
 		HWD.pfnDrawPolygon(pSurf, wallVerts, 4, blend|PF_Modulated); // No PF_Occlude means overlapping (incorrect) transparency
 
