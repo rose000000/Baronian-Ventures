@@ -129,7 +129,6 @@ typedef struct
 typedef struct
 {
 	FLOAT       x,y,z;
-	FUINT       argb;           // flat-shaded color
 	FLOAT       sow;            // s texture ordinate (s over w)
 	FLOAT       tow;            // t texture ordinate (t over w)
 } FOutVector;

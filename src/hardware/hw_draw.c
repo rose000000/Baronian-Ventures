@@ -850,8 +850,6 @@ void HWR_DrawFadeFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color, UINT16 ac
 	v[0].y = v[1].y = fy;
 	v[2].y = v[3].y = fy - fh;
 
-	//Hurdler: do we still use this argb color? if not, we should remove it
-	v[0].argb = v[1].argb = v[2].argb = v[3].argb = 0xff00ff00; //;
 	v[0].z = v[1].z = v[2].z = v[3].z = 1.0f;
 
 	v[0].sow = v[3].sow = 0.0f;
@@ -1232,8 +1230,6 @@ void HWR_DrawConsoleFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color, UINT32
 	v[0].y = v[1].y = fy;
 	v[2].y = v[3].y = fy - fh;
 
-	//Hurdler: do we still use this argb color? if not, we should remove it
-	v[0].argb = v[1].argb = v[2].argb = v[3].argb = 0xff00ff00; //;
 	v[0].z = v[1].z = v[2].z = v[3].z = 1.0f;
 
 	v[0].sow = v[3].sow = 0.0f;
@@ -1412,8 +1408,6 @@ void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
 	v[0].y = v[1].y = fy;
 	v[2].y = v[3].y = fy - fh;
 
-	//Hurdler: do we still use this argb color? if not, we should remove it
-	v[0].argb = v[1].argb = v[2].argb = v[3].argb = 0xff00ff00; //;
 	v[0].z = v[1].z = v[2].z = v[3].z = 1.0f;
 
 	v[0].sow = v[3].sow = 0.0f;
