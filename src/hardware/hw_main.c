@@ -1403,7 +1403,6 @@ static void HWR_StoreWallRange(double startfrac, double endfrac)
 	wallVerts[0].z = wallVerts[3].z = vs.y;
 	wallVerts[2].x = wallVerts[1].x = ve.x;
 	wallVerts[2].z = wallVerts[1].z = ve.y;
-	wallVerts[0].w = wallVerts[1].w = wallVerts[2].w = wallVerts[3].w = 1.0f;
 
 	{
 		// x offset the texture

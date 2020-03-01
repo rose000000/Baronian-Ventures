@@ -82,15 +82,14 @@ typedef struct
 // Simple 3D vector
 typedef struct FVector
 {
-		FLOAT x,y,z;
+	FLOAT x,y,z;
 } FVector;
 
 // 3D model vector (coords + texture coords)
 typedef struct
 {
-	//FVector     Point;
 	FLOAT       x,y,z;
-	FLOAT       s,t,w;            // texture coordinates
+	FLOAT       s,t;            // texture coordinates
 } v3d_t, wallVert3D;
 
 //Hurdler: Transform (coords + angles)
