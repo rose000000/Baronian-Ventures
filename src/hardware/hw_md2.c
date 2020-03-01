@@ -148,7 +148,7 @@ static void PNG_warn(png_structp PNG, png_const_charp pngtext)
 	CONS_Debug(DBG_RENDER, "libpng warning at %p: %s", PNG, pngtext);
 }
 
-static HWRTextureFormat_t PNG_Load(const char *filename, int *w, int *h, GLPatch_t *grpatch)
+static HWRTextureFormat PNG_Load(const char *filename, int *w, int *h, GLPatch_t *grpatch)
 {
 	png_structp png_ptr;
 	png_infop png_info_ptr;
@@ -198,7 +198,7 @@ static HWRTextureFormat_t PNG_Load(const char *filename, int *w, int *h, GLPatch
 		//CONS_Debug(DBG_RENDER, "libpng load error on %s\n", filename);
 		png_destroy_read_struct(&png_ptr, &png_info_ptr, NULL);
 		fclose(png_FILE);
-		Z_Free(grpatch->mipmap->grInfo.data);
+		Z_Free(grpatch->mipmap->data);
 		return 0;
 	}
 #ifdef USE_FAR_KEYWORD
@@ -239,7 +239,7 @@ static HWRTextureFormat_t PNG_Load(const char *filename, int *w, int *h, GLPatch
 
 	{
 		png_uint_32 i, pitch = png_get_rowbytes(png_ptr, png_info_ptr);
-		png_bytep PNG_image = Z_Malloc(pitch*height, PU_HWRMODELTEXTURE, &grpatch->mipmap->grInfo.data);
+		png_bytep PNG_image = Z_Malloc(pitch*height, PU_HWRMODELTEXTURE, &grpatch->mipmap->data);
 		png_bytepp row_pointers = png_malloc(png_ptr, height * sizeof (png_bytep));
 		for (i = 0; i < height; i++)
 			row_pointers[i] = PNG_image + i*pitch;
@@ -278,7 +278,7 @@ typedef struct
 	UINT8 filler[54];
 } PcxHeader;
 
-static HWRTextureFormat_t PCX_Load(const char *filename, int *w, int *h,
+static HWRTextureFormat PCX_Load(const char *filename, int *w, int *h,
 	GLPatch_t *grpatch)
 {
 	PcxHeader header;
@@ -313,7 +313,7 @@ static HWRTextureFormat_t PCX_Load(const char *filename, int *w, int *h,
 
 	pw = *w = header.xmax - header.xmin + 1;
 	ph = *h = header.ymax - header.ymin + 1;
-	image = Z_Malloc(pw*ph*4, PU_HWRMODELTEXTURE, &grpatch->mipmap->grInfo.data);
+	image = Z_Malloc(pw*ph*4, PU_HWRMODELTEXTURE, &grpatch->mipmap->data);
 
 	if (fread(palette, sizeof (UINT8), PALSIZE, file) != PALSIZE)
 	{
@@ -361,7 +361,7 @@ static void md2_loadTexture(md2_t *model)
 	if (model->grpatch)
 	{
 		grpatch = model->grpatch;
-		Z_Free(grpatch->mipmap->grInfo.data);
+		Z_Free(grpatch->mipmap->data);
 	}
 	else
 	{
@@ -370,18 +370,18 @@ static void md2_loadTexture(md2_t *model)
 		grpatch->mipmap = Z_Calloc(sizeof (GLMipmap_t), PU_HWRPATCHINFO, NULL);
 	}
 
-	if (!grpatch->mipmap->downloaded && !grpatch->mipmap->grInfo.data)
+	if (!grpatch->mipmap->downloaded && !grpatch->mipmap->data)
 	{
 		int w = 0, h = 0;
 		UINT32 size;
 		RGBA_t *image;
 
 #ifdef HAVE_PNG
-		grpatch->mipmap->grInfo.format = PNG_Load(filename, &w, &h, grpatch);
-		if (grpatch->mipmap->grInfo.format == 0)
+		grpatch->mipmap->format = PNG_Load(filename, &w, &h, grpatch);
+		if (grpatch->mipmap->format == 0)
 #endif
-		grpatch->mipmap->grInfo.format = PCX_Load(filename, &w, &h, grpatch);
-		if (grpatch->mipmap->grInfo.format == 0)
+		grpatch->mipmap->format = PCX_Load(filename, &w, &h, grpatch);
+		if (grpatch->mipmap->format == 0)
 			return;
 
 		grpatch->mipmap->downloaded = 0;
@@ -393,7 +393,7 @@ static void md2_loadTexture(md2_t *model)
 		grpatch->mipmap->height = (UINT16)h;
 
 		// Lactozilla: Apply colour cube
-		image = grpatch->mipmap->grInfo.data;
+		image = grpatch->mipmap->data;
 		size = w*h;
 		while (size--)
 		{
@@ -418,7 +418,7 @@ static void md2_loadBlendTexture(md2_t *model)
 	if (model->blendgrpatch)
 	{
 		grpatch = model->blendgrpatch;
-		Z_Free(grpatch->mipmap->grInfo.data);
+		Z_Free(grpatch->mipmap->data);
 	}
 	else
 	{
@@ -427,15 +427,15 @@ static void md2_loadBlendTexture(md2_t *model)
 		grpatch->mipmap = Z_Calloc(sizeof (GLMipmap_t), PU_HWRPATCHINFO, NULL);
 	}
 
-	if (!grpatch->mipmap->downloaded && !grpatch->mipmap->grInfo.data)
+	if (!grpatch->mipmap->downloaded && !grpatch->mipmap->data)
 	{
 		int w = 0, h = 0;
 #ifdef HAVE_PNG
-		grpatch->mipmap->grInfo.format = PNG_Load(filename, &w, &h, grpatch);
-		if (grpatch->mipmap->grInfo.format == 0)
+		grpatch->mipmap->format = PNG_Load(filename, &w, &h, grpatch);
+		if (grpatch->mipmap->format == 0)
 #endif
-		grpatch->mipmap->grInfo.format = PCX_Load(filename, &w, &h, grpatch);
-		if (grpatch->mipmap->grInfo.format == 0)
+		grpatch->mipmap->format = PCX_Load(filename, &w, &h, grpatch);
+		if (grpatch->mipmap->format == 0)
 		{
 			Z_Free(filename);
 			return;
@@ -685,20 +685,20 @@ static void HWR_CreateBlendedTexture(GLPatch_t *gpatch, GLPatch_t *blendgpatch, 
 		// no wrap around, no chroma key
 		grmip->flags = 0;
 		// setup the texture info
-		grmip->grInfo.format = GR_RGBA;
+		grmip->format = GR_RGBA;
 	}
 
-	if (grmip->grInfo.data)
+	if (grmip->data)
 	{
-		Z_Free(grmip->grInfo.data);
-		grmip->grInfo.data = NULL;
+		Z_Free(grmip->data);
+		grmip->data = NULL;
 	}
 
-	cur = Z_Malloc(size*4, PU_HWRMODELTEXTURE, &grmip->grInfo.data);
+	cur = Z_Malloc(size*4, PU_HWRMODELTEXTURE, &grmip->data);
 	memset(cur, 0x00, size*4);
 
-	image = gpatch->mipmap->grInfo.data;
-	blendimage = blendgpatch->mipmap->grInfo.data;
+	image = gpatch->mipmap->data;
+	blendimage = blendgpatch->mipmap->data;
 
 	// TC_METALSONIC includes an actual skincolor translation, on top of its flashing.
 	if (skinnum == TC_METALSONIC)
@@ -1041,7 +1041,7 @@ static void HWR_GetBlendedTexture(GLPatch_t *gpatch, GLPatch_t *blendgpatch, INT
 		return;
 	}
 
-	if ((blendgpatch && blendgpatch->mipmap->grInfo.format)
+	if ((blendgpatch && blendgpatch->mipmap->format)
 		&& (gpatch->width != blendgpatch->width || gpatch->height != blendgpatch->height))
 	{
 		// Blend image exists, but it's bad.
@@ -1056,10 +1056,10 @@ static void HWR_GetBlendedTexture(GLPatch_t *gpatch, GLPatch_t *blendgpatch, INT
 		grmip = grmip->nextcolormap;
 		if (grmip->colormap == colormap)
 		{
-			if (grmip->downloaded && grmip->grInfo.data)
+			if (grmip->downloaded && grmip->data)
 			{
 				HWD.pfnSetTexture(grmip); // found the colormap, set it to the correct texture
-				Z_ChangeTag(grmip->grInfo.data, PU_HWRMODELTEXTURE_UNLOCKED);
+				Z_ChangeTag(grmip->data, PU_HWRMODELTEXTURE_UNLOCKED);
 				return;
 			}
 		}
@@ -1081,7 +1081,7 @@ static void HWR_GetBlendedTexture(GLPatch_t *gpatch, GLPatch_t *blendgpatch, INT
 	HWR_CreateBlendedTexture(gpatch, blendgpatch, newmip, skinnum, color);
 
 	HWD.pfnSetTexture(newmip);
-	Z_ChangeTag(newmip->grInfo.data, PU_HWRMODELTEXTURE_UNLOCKED);
+	Z_ChangeTag(newmip->data, PU_HWRMODELTEXTURE_UNLOCKED);
 }
 
 #define NORMALFOG 0x00000000
@@ -1301,15 +1301,15 @@ boolean HWR_DrawModel(gr_vissprite_t *spr)
 		finalscale = md2->scale;
 		//Hurdler: arf, I don't like that implementation at all... too much crappy
 		gpatch = md2->grpatch;
-		if (!gpatch || !gpatch->mipmap->grInfo.format || !gpatch->mipmap->downloaded)
+		if (!gpatch || !gpatch->mipmap->format || !gpatch->mipmap->downloaded)
 			md2_loadTexture(md2);
 		gpatch = md2->grpatch; // Load it again, because it isn't being loaded into gpatch after md2_loadtexture...
 
-		if ((gpatch && gpatch->mipmap->grInfo.format) // don't load the blend texture if the base texture isn't available
-			&& (!md2->blendgrpatch || !((GLPatch_t *)md2->blendgrpatch)->mipmap->grInfo.format || !((GLPatch_t *)md2->blendgrpatch)->mipmap->downloaded))
+		if ((gpatch && gpatch->mipmap->format) // don't load the blend texture if the base texture isn't available
+			&& (!md2->blendgrpatch || !((GLPatch_t *)md2->blendgrpatch)->mipmap->format || !((GLPatch_t *)md2->blendgrpatch)->mipmap->downloaded))
 			md2_loadBlendTexture(md2);
 
-		if (gpatch && gpatch->mipmap->grInfo.format) // else if meant that if a texture couldn't be loaded, it would just end up using something else's texture
+		if (gpatch && gpatch->mipmap->format) // else if meant that if a texture couldn't be loaded, it would just end up using something else's texture
 		{
 			INT32 skinnum = TC_DEFAULT;
 

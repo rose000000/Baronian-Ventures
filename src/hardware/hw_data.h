@@ -38,7 +38,7 @@
 // Glide API leftovers. Some of them have no direct OpenGL equivalent.
 //
 
-typedef INT32 HWRTextureFormat_t;
+typedef INT32 HWRTextureFormat;
 
 #define GR_TEXFMT_ALPHA_8               0x2 /* (0..0xFF) alpha     (used for fade masks) */
 #define GR_TEXFMT_INTENSITY_8           0x3 /* (0..0xFF) intensity              (unused) */
@@ -51,27 +51,25 @@ typedef INT32 HWRTextureFormat_t;
 #define GR_TEXFMT_ALPHA_INTENSITY_88    0xd /*                                  (unused) */
 #define GR_TEXFMT_AP_88                 0xe /* 8-bit alpha 8-bit palette        (unused) */
 
-typedef struct
-{
-	HWRTextureFormat_t format;
-	void               *data;
-} HWRTexInfo;
-
-// grInfo.data holds the address of the graphics data cached in heap memory
+// .data holds the address of the graphics data cached in heap memory
 //                NULL if the texture is not in Doom heap cache.
 struct GLMipmap_s
 {
-	HWRTexInfo      grInfo;         //for TexDownloadMipMap
-	UINT32          flags;
-	UINT16          height;
-	UINT16          width;
-	UINT32          downloaded;     // the dll driver have it in there cache ?
+	// Basic texture info
+	UINT16             width, height;
+	UINT32             flags;         // Texture flags (TF_)
+	HWRTextureFormat   format;        // GR_ (put those in an enum, maybe?)
+	void               *data;
 
-	struct GLMipmap_s    *nextcolormap;
-	const UINT8          *colormap;
+	// Colormaps
+	struct GLMipmap_s  *nextcolormap; // List of mipmaps with colormaps
+	const  UINT8       *colormap;     // Colormap of this mipmap
 
-	// opengl
-	struct GLMipmap_s *nextmipmap; // opengl : liste of all texture in opengl driver
+	// APIs may handle this differently.
+	UINT32             downloaded;    // Uploaded to the GPU
+
+	// Mipmap after this one
+	struct GLMipmap_s  *nextmipmap;
 };
 typedef struct GLMipmap_s GLMipmap_t;
 

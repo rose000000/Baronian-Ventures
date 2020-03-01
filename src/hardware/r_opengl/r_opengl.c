@@ -1129,15 +1129,15 @@ EXPORT void HWRAPI(SetTexture) (FTextureInfo *pTexInfo)
 		const GLvoid   *ptex = tex;
 		INT32             w, h;
 
-		//DBG_Printf ("DownloadMipmap %d %x\n",NextTexAvail,pTexInfo->grInfo.data);
+		//DBG_Printf ("DownloadMipmap %d %x\n",NextTexAvail,pTexInfo->data);
 
 		w = pTexInfo->width;
 		h = pTexInfo->height;
 
-		if ((pTexInfo->grInfo.format == GR_TEXFMT_P_8) ||
-			(pTexInfo->grInfo.format == GR_TEXFMT_AP_88))
+		if ((pTexInfo->format == GR_TEXFMT_P_8) ||
+			(pTexInfo->format == GR_TEXFMT_AP_88))
 		{
-			const GLubyte *pImgData = (const GLubyte *)pTexInfo->grInfo.data;
+			const GLubyte *pImgData = (const GLubyte *)pTexInfo->data;
 			INT32 i, j;
 
 			for (j = 0; j < h; j++)
@@ -1163,7 +1163,7 @@ EXPORT void HWRAPI(SetTexture) (FTextureInfo *pTexInfo)
 
 					pImgData++;
 
-					if (pTexInfo->grInfo.format == GR_TEXFMT_AP_88)
+					if (pTexInfo->format == GR_TEXFMT_AP_88)
 					{
 						if (!(pTexInfo->flags & TF_CHROMAKEYED))
 							tex[w*j+i].s.alpha = *pImgData;
@@ -1173,15 +1173,15 @@ EXPORT void HWRAPI(SetTexture) (FTextureInfo *pTexInfo)
 				}
 			}
 		}
-		else if (pTexInfo->grInfo.format == GR_RGBA)
+		else if (pTexInfo->format == GR_RGBA)
 		{
 			// corona test : passed as ARGB 8888, which is not in glide formats
 			// Hurdler: not used for coronas anymore, just for dynamic lighting
-			ptex = pTexInfo->grInfo.data;
+			ptex = pTexInfo->data;
 		}
-		else if (pTexInfo->grInfo.format == GR_TEXFMT_ALPHA_INTENSITY_88)
+		else if (pTexInfo->format == GR_TEXFMT_ALPHA_INTENSITY_88)
 		{
-			const GLubyte *pImgData = (const GLubyte *)pTexInfo->grInfo.data;
+			const GLubyte *pImgData = (const GLubyte *)pTexInfo->data;
 			INT32 i, j;
 
 			for (j = 0; j < h; j++)
@@ -1197,9 +1197,9 @@ EXPORT void HWRAPI(SetTexture) (FTextureInfo *pTexInfo)
 				}
 			}
 		}
-		else if (pTexInfo->grInfo.format == GR_TEXFMT_ALPHA_8) // Used for fade masks
+		else if (pTexInfo->format == GR_TEXFMT_ALPHA_8) // Used for fade masks
 		{
-			const GLubyte *pImgData = (const GLubyte *)pTexInfo->grInfo.data;
+			const GLubyte *pImgData = (const GLubyte *)pTexInfo->data;
 			INT32 i, j;
 
 			for (j = 0; j < h; j++)
@@ -1215,7 +1215,7 @@ EXPORT void HWRAPI(SetTexture) (FTextureInfo *pTexInfo)
 			}
 		}
 		else
-			DBG_Printf ("SetTexture(bad format) %d\n", pTexInfo->grInfo.format);
+			DBG_Printf ("SetTexture(bad format) %d\n", pTexInfo->format);
 
 		pTexInfo->downloaded = NextTexAvail++;
 		tex_downloaded = pTexInfo->downloaded;
@@ -1233,7 +1233,7 @@ EXPORT void HWRAPI(SetTexture) (FTextureInfo *pTexInfo)
 			pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
 		}
 
-		if (pTexInfo->grInfo.format == GR_TEXFMT_ALPHA_INTENSITY_88)
+		if (pTexInfo->format == GR_TEXFMT_ALPHA_INTENSITY_88)
 		{
 			//pglTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
 			if (MipMap)
@@ -1249,7 +1249,7 @@ EXPORT void HWRAPI(SetTexture) (FTextureInfo *pTexInfo)
 			else
 				pglTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
 		}
-		else if (pTexInfo->grInfo.format == GR_TEXFMT_ALPHA_8)
+		else if (pTexInfo->format == GR_TEXFMT_ALPHA_8)
 		{
 			//pglTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, ptex);
 			if (MipMap)
@@ -2280,7 +2280,7 @@ EXPORT INT32  HWRAPI(GetTextureUsed) (void)
 		// I don't know which one the game actually _uses_ but this
 		// follows format2bpp in hw_cache.c
 		int bpp = 1;
-		int format = tmp->grInfo.format;
+		int format = tmp->format;
 		if (format == GR_RGBA)
 			bpp = 4;
 		else if (format == GR_TEXFMT_RGB_565

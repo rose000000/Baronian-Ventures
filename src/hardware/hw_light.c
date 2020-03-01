@@ -1230,10 +1230,10 @@ static void HWR_SetLight(void)
 {
 	int    i, j;
 
-	if (!lightmappatch.mipmap->downloaded && !lightmappatch.mipmap->grInfo.data)
+	if (!lightmappatch.mipmap->downloaded && !lightmappatch.mipmap->data)
 	{
 
-		UINT16 *Data = Z_Malloc(129*128*sizeof (UINT16), PU_HWRCACHE, &lightmappatch.mipmap->grInfo.data);
+		UINT16 *Data = Z_Malloc(129*128*sizeof (UINT16), PU_HWRCACHE, &lightmappatch.mipmap->data);
 
 		for (i = 0; i < 128; i++)
 		{
@@ -1246,7 +1246,7 @@ static void HWR_SetLight(void)
 					Data[i*128+j] = 0;
 			}
 		}
-		lightmappatch.mipmap->grInfo.format = GR_TEXFMT_ALPHA_INTENSITY_88;
+		lightmappatch.mipmap->format = GR_TEXFMT_ALPHA_INTENSITY_88;
 
 		lightmappatch.width = 128;
 		lightmappatch.height = 128;
@@ -1257,7 +1257,7 @@ static void HWR_SetLight(void)
 	HWD.pfnSetTexture(lightmappatch.mipmap);
 
 	// The system-memory data can be purged now.
-	Z_ChangeTag(lightmappatch.mipmap->grInfo.data, PU_HWRCACHE_UNLOCKED);
+	Z_ChangeTag(lightmappatch.mipmap->data, PU_HWRCACHE_UNLOCKED);
 }
 
 //**********************************************************
