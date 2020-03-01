@@ -126,7 +126,7 @@ void HWR_DrawPatch(GLPatch_t *gpatch, INT32 x, INT32 y, INT32 option)
 	v[0].tow = v[1].tow = 0.0f;
 	v[2].tow = v[3].tow = gpatch->max_t;
 
-	flags = BLENDMODE|PF_Clip|PF_NoZClip|PF_NoDepthTest;
+	flags = BLENDMODE|PF_NoDepthTest;
 
 	if (option & V_WRAPX)
 		flags |= PF_ForceWrapX;
@@ -368,7 +368,7 @@ void HWR_DrawStretchyFixedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t
 	v[0].tow = v[1].tow = 0.0f;
 	v[2].tow = v[3].tow = gpatch->max_t;
 
-	flags = BLENDMODE|PF_Clip|PF_NoZClip|PF_NoDepthTest;
+	flags = BLENDMODE|PF_NoDepthTest;
 
 	if (option & V_WRAPX)
 		flags |= PF_ForceWrapX;
@@ -526,7 +526,7 @@ void HWR_DrawCroppedPatch(GLPatch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscal
 	else
 		v[2].tow = v[3].tow = ((sy+h)/(float)SHORT(gpatch->height))*gpatch->max_t;
 
-	flags = BLENDMODE|PF_Clip|PF_NoZClip|PF_NoDepthTest;
+	flags = BLENDMODE|PF_NoDepthTest;
 
 	if (option & V_WRAPX)
 		flags |= PF_ForceWrapX;
@@ -581,7 +581,7 @@ void HWR_DrawPic(INT32 x, INT32 y, lumpnum_t lumpnum)
 	// But then, the question is: why not 0 instead of PF_Masked ?
 	// or maybe PF_Environment ??? (like what I said above)
 	// BP: PF_Environment don't change anything ! and 0 is undifined
-	HWD.pfnDrawPolygon(NULL, v, 4, BLENDMODE | PF_NoDepthTest | PF_Clip | PF_NoZClip);
+	HWD.pfnDrawPolygon(NULL, v, 4, BLENDMODE | PF_NoDepthTest);
 }
 
 // ==========================================================================

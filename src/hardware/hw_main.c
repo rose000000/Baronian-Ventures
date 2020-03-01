@@ -737,10 +737,10 @@ static void HWR_RenderPlane(sector_t *sector, extrasubsector_t *xsub, boolean is
 	if (PolyFlags & (PF_Translucent|PF_Fog))
 	{
 		Surf.FlatColor.s.alpha = (UINT8)alpha;
-		PolyFlags |= PF_Modulated|PF_Clip;
+		PolyFlags |= PF_Modulated;
 	}
 	else
-		PolyFlags |= PF_Masked|PF_Modulated|PF_Clip;
+		PolyFlags |= PF_Masked|PF_Modulated;
 
 	HWD.pfnDrawPolygon(&Surf, planeVerts, nrPlaneVerts, PolyFlags);
 
@@ -790,8 +790,7 @@ static void HWR_RenderSkyPlane(extrasubsector_t *xsub, fixed_t fixedheight)
 		v3d->z = pv->y;
 	}
 
-	HWD.pfnDrawPolygon(NULL, planeVerts, nrPlaneVerts,
-	 PF_Clip|PF_Invisible|PF_NoTexture|PF_Occlude);
+	HWD.pfnDrawPolygon(NULL, planeVerts, nrPlaneVerts, PF_Invisible|PF_NoTexture|PF_Occlude);
 }
 #endif //polysky
 
@@ -866,7 +865,7 @@ static void HWR_DrawSegsSplats(FSurfaceInfo * pSurf)
 				break;
 		}
 
-		HWD.pfnDrawPolygon(&pSurf2, trVerts, 4, i|PF_Modulated|PF_Clip|PF_Decal);
+		HWD.pfnDrawPolygon(&pSurf2, trVerts, 4, i|PF_Modulated|PF_Decal);
 	}
 }
 #endif
@@ -922,7 +921,7 @@ static void HWR_ProjectWall(FOutVector   * wallVerts,
 		pSurf->FlatColor.rgba = HWR_Lighting(lightlevel, NORMALFOG, FADEFOG, false, false);
 	}
 
-	HWD.pfnDrawPolygon(pSurf, wallVerts, 4, blendmode|PF_Modulated|PF_Occlude|PF_Clip);
+	HWD.pfnDrawPolygon(pSurf, wallVerts, 4, blendmode|PF_Modulated|PF_Occlude);
 
 #ifdef WALLSPLATS
 	if (gr_curline->linedef->splats && cv_splats.value)
@@ -934,7 +933,7 @@ static void HWR_ProjectWall(FOutVector   * wallVerts,
 
 	//Hurdler: for better dynamic light in dark area, we should draw the light first
 	//         and then the wall all that with the right blending func
-	//HWD.pfnDrawPolygon(pSurf, trVerts, 4, PF_Additive|PF_Modulated|PF_Occlude|PF_Clip);
+	//HWD.pfnDrawPolygon(pSurf, trVerts, 4, PF_Additive|PF_Modulated|PF_Occlude);
 #endif
 }
 
@@ -1265,7 +1264,7 @@ static void HWR_DrawSkyWall(FOutVector *wallVerts, FSurfaceInfo *Surf)
 	wallVerts[0].sow = wallVerts[3].sow = 0;
 	wallVerts[2].sow = wallVerts[1].sow = 0;
 	// this no longer sets top/bottom coords, this should be done before caling the function
-	HWR_ProjectWall(wallVerts, Surf, PF_Invisible|PF_Clip|PF_NoTexture, 255, NULL);
+	HWR_ProjectWall(wallVerts, Surf, PF_Invisible|PF_NoTexture, 255, NULL);
 	// PF_Invisible so it's not drawn into the colour buffer
 	// PF_NoTexture for no texture
 	// PF_Occlude is set in HWR_ProjectWall to draw into the depth buffer
@@ -3290,10 +3289,10 @@ static void HWR_RenderPolyObjectPlane(polyobj_t *polysector, boolean isceiling, 
 	if (blendmode & PF_Translucent)
 	{
 		Surf.FlatColor.s.alpha = (UINT8)alpha;
-		blendmode |= PF_Modulated|PF_Occlude|PF_Clip;
+		blendmode |= PF_Modulated|PF_Occlude;
 	}
 	else
-		blendmode |= PF_Masked|PF_Modulated|PF_Clip;
+		blendmode |= PF_Masked|PF_Modulated;
 
 	HWD.pfnDrawPolygon(&Surf, planeVerts, nrPlaneVerts, blendmode);
 }
@@ -4155,7 +4154,7 @@ static void HWR_DrawDropShadow(mobj_t *thing, gr_vissprite_t *spr, fixed_t scale
 
 	sSurf.FlatColor.s.alpha = alpha;
 
-	HWD.pfnDrawPolygon(&sSurf, shadowVerts, 4, PF_Translucent|PF_Modulated|PF_Clip);
+	HWD.pfnDrawPolygon(&sSurf, shadowVerts, 4, PF_Translucent|PF_Modulated);
 }
 
 // This is expecting a pointer to an array containing 4 wallVerts for a sprite
@@ -4484,7 +4483,7 @@ static void HWR_SplitSprite(gr_vissprite_t *spr)
 
 		Surf.FlatColor.s.alpha = alpha;
 
-		HWD.pfnDrawPolygon(&Surf, wallVerts, 4, blend|PF_Modulated|PF_Clip);
+		HWD.pfnDrawPolygon(&Surf, wallVerts, 4, blend|PF_Modulated);
 
 		top = bot;
 #ifdef ESLOPE
@@ -4526,7 +4525,7 @@ static void HWR_SplitSprite(gr_vissprite_t *spr)
 
 	Surf.FlatColor.s.alpha = alpha;
 
-	HWD.pfnDrawPolygon(&Surf, wallVerts, 4, blend|PF_Modulated|PF_Clip);
+	HWD.pfnDrawPolygon(&Surf, wallVerts, 4, blend|PF_Modulated);
 }
 
 // -----------------+
@@ -4674,7 +4673,7 @@ static void HWR_DrawSprite(gr_vissprite_t *spr)
 			blend = PF_Translucent|PF_Occlude;
 		}
 
-		HWD.pfnDrawPolygon(&Surf, wallVerts, 4, blend|PF_Modulated|PF_Clip);
+		HWD.pfnDrawPolygon(&Surf, wallVerts, 4, blend|PF_Modulated);
 	}
 }
 
@@ -4776,7 +4775,7 @@ static inline void HWR_DrawPrecipitationSprite(gr_vissprite_t *spr)
 		blend = PF_Translucent|PF_Occlude;
 	}
 
-	HWD.pfnDrawPolygon(&Surf, wallVerts, 4, blend|PF_Modulated|PF_Clip);
+	HWD.pfnDrawPolygon(&Surf, wallVerts, 4, blend|PF_Modulated);
 }
 #endif
 
@@ -6776,9 +6775,9 @@ static void HWR_RenderWall(FOutVector   *wallVerts, FSurfaceInfo *pSurf, FBITFIE
 	pSurf->FlatColor.s.alpha = alpha; // put the alpha back after lighting
 
 	if (blend & PF_Environment)
-		HWD.pfnDrawPolygon(pSurf, wallVerts, 4, blend|PF_Modulated|PF_Clip|PF_Occlude); // PF_Occlude must be used for solid objects
+		HWD.pfnDrawPolygon(pSurf, wallVerts, 4, blend|PF_Modulated||PF_Occlude); // PF_Occlude must be used for solid objects
 	else
-		HWD.pfnDrawPolygon(pSurf, wallVerts, 4, blend|PF_Modulated|PF_Clip); // No PF_Occlude means overlapping (incorrect) transparency
+		HWD.pfnDrawPolygon(pSurf, wallVerts, 4, blend|PF_Modulated); // No PF_Occlude means overlapping (incorrect) transparency
 
 #ifdef WALLSPLATS
 	if (gr_curline->linedef->splats && cv_splats.value)
@@ -6827,7 +6826,7 @@ void HWR_DoPostProcessor(player_t *player)
 
 		Surf.FlatColor.s.alpha = 0xc0; // match software mode
 
-		HWD.pfnDrawPolygon(&Surf, v, 4, PF_Modulated|PF_Additive|PF_NoTexture|PF_NoDepthTest|PF_Clip|PF_NoZClip);
+		HWD.pfnDrawPolygon(&Surf, v, 4, PF_Modulated|PF_Additive|PF_NoTexture|PF_NoDepthTest);
 	}
 
 	// Capture the screen for intermission and screen waving
