@@ -6519,10 +6519,6 @@ void HWR_Startup(void)
 {
 	static boolean startupdone = false;
 
-	// setup GLPatch_t scaling
-	gr_patch_scalex = (float)(1.0f / vid.width);
-	gr_patch_scaley = (float)(1.0f / vid.height);
-
 	// initalze light lut translation
 	InitLumLut();
 

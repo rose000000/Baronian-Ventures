@@ -43,9 +43,6 @@
 #define O_BINARY 0
 #endif
 
-float gr_patch_scalex;
-float gr_patch_scaley;
-
 #if defined(_MSC_VER)
 #pragma pack(1)
 #endif

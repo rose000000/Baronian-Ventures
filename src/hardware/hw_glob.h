@@ -118,9 +118,6 @@ void HWR_GetFadeMask(lumpnum_t fademasklumpnum);
 // --------
 // hw_draw.c
 // --------
-extern float gr_patch_scalex;
-extern float gr_patch_scaley;
-
 extern INT32 patchformat;
 extern INT32 textureformat;
 
