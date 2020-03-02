@@ -6535,9 +6535,6 @@ void HWR_Startup(void)
 #endif
 	}
 
-	if (rendermode == render_opengl)
-		textureformat = patchformat = GR_RGBA;
-
 	startupdone = true;
 }
 

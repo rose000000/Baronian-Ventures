@@ -33,8 +33,8 @@
 #include "../r_patch.h"
 #include "../p_setup.h"
 
-INT32 patchformat = GR_TEXFMT_AP_88; // use alpha for holes
-INT32 textureformat = GR_TEXFMT_P_8; // use chromakey for hole
+INT32 patchformat = GR_RGBA;
+INT32 textureformat = GR_RGBA;
 
 static INT32 format2bpp(HWRTextureFormat format)
 {
@@ -486,7 +486,8 @@ static void HWR_GenerateTexture(INT32 texnum, GLTexture_t *grtex)
 	blocksize = (blockwidth * blockheight);
 	block = MakeBlock(&grtex->mipmap);
 
-	if (skyspecial) //Hurdler: not efficient, but better than holes in the sky (and it's done only at level loading)
+	//Hurdler: not efficient, but better than holes in the sky (and it's done only at level loading)
+	if (skyspecial && (format2bpp(textureformat) == 4))
 	{
 		INT32 j;
 		RGBA_t col;
