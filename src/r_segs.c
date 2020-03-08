@@ -473,20 +473,15 @@ static void R_CalculateSegDistance(seg_t *seg, INT64 x2, INT64 y2, boolean longb
 	float dx, dy, vdx, vdy;
 	float distance = 0.0f;
 
-	// The seg is vertical.
-	if (!seg->linedef->dy)
-		distance = fabsf(y2 - v1y);
-	// The seg is horizontal.
-	else if (!seg->linedef->dx)
-		distance = fabsf(x2 - v1x);
 	// Uses precalculated seg->flength
-	else if (longboi)
+	if (longboi)
 	{
 		dx = v2x-v1x;
 		dy = v2y-v1y;
 		vdx = x2-v1x;
 		vdy = y2-v1y;
 		distance = ((dy*vdx)-(dx*vdy))/(seg->flength);
+		rw.distance = FLOAT_TO_FIXED(distance);
 	}
 	// Linguica's fix converted to floating-point math
 	else
@@ -509,24 +504,14 @@ static void R_CalculateSegDistance(seg_t *seg, INT64 x2, INT64 y2, boolean longb
 		y = FLOAT_TO_FIXED(ac*dx);
 
 		rw.distance = R_PointToDist(viewx + x, viewy + y);
-		return;
 	}
-
-	rw.distance = FLOAT_TO_FIXED(distance);
 #else
+	INT64 dx = (seg->v2->x)-(seg->v1->x);
+	INT64 dy = (seg->v2->y)-(seg->v1->y);
+	INT64 vdx = x2-(seg->v1->x);
+	INT64 vdy = y2-(seg->v1->y);
+	rw.distance = (fixed_t)(((dy*vdx)-(dx*vdy))/(seg->length));
 	(void)longboi;
-	if (!seg->linedef->dy)
-		rw.distance = (fixed_t)(llabs(y2 - seg->v1->y));
-	else if (!seg->linedef->dx)
-		rw.distance = (fixed_t)(llabs(x2 - seg->v1->x));
-	else
-	{
-		INT64 dx = (seg->v2->x)-(seg->v1->x);
-		INT64 dy = (seg->v2->y)-(seg->v1->y);
-		INT64 vdx = x2-(seg->v1->x);
-		INT64 vdy = y2-(seg->v1->y);
-		rw.distance = (fixed_t)(((dy*vdx)-(dx*vdy))/(seg->length));
-	}
 #endif
 }
 
@@ -2005,17 +1990,11 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	hyp = R_PointToDist(curline->v1->x, curline->v1->y);
 	longboi = (hyp >= INT32_MAX);
 
-	// The seg is vertical.
-	if (curline->v1->y == curline->v2->y)
-		rw.distance = (fixed_t)(llabs(viewy - curline->v1->y));
-	// The seg is horizontal.
-	else if (curline->v1->x == curline->v2->x)
-		rw.distance = (fixed_t)(llabs(viewx - curline->v1->x));
 	// big room fix
 #ifdef SOFTWARE_USE_FLOATS
-	else if ((curline->length >= 1024<<FRACBITS) || longboi)
+	if ((curline->length >= 1024<<FRACBITS) || longboi)
 #else
-	else if (longboi)
+	if (longboi)
 #endif
 		R_CalculateSegDistance(curline, viewx, viewy, longboi);
 	else
